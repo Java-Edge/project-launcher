@@ -509,9 +509,9 @@ kill -9 <PID>
 ## 📚 学习资源
 
 ### 📖 **文档**
-- [快速入门指南](QUICK_START.md) - 3分钟上手
-- [演示指南](demo.md) - 完整功能演示
-- [API文档]() - Web界面API说明
+- [快速入门指南](https://github.com/Java-Edge/project-launcher/blob/main/QUICK_START.md) - 3分钟上手
+- [演示指南](https://github.com/Java-Edge/project-launcher/blob/main/demo.md) - 完整功能演示
+- [API文档](https://github.com/Java-Edge/project-launcher/wiki/API-Documentation) - Web界面API说明
 
 ### 🎥 **视频教程** (计划中)
 - Web管理界面使用演示
@@ -531,7 +531,7 @@ kill -9 <PID>
 
 如果您发现了bug或有改进建议：
 
-1. **搜索现有问题**: 查看 [Issues](https://github.com/your-username/project-launcher/issues) 是否已有相关问题
+1. **搜索现有问题**: 查看 [Issues](https://github.com/Java-Edge/project-launcher/issues) 是否已有相关问题
 2. **创建新问题**: 如果没有找到，请创建新的Issue
 3. **提供详细信息**:
    - 系统环境和版本
@@ -556,7 +556,7 @@ kill -9 <PID>
 ```bash
 # 1. Fork项目
 # 2. 克隆到本地
-git clone https://github.com/your-username/project-launcher.git
+git clone https://github.com/Java-Edge/project-launcher.git
 cd project-launcher
 
 # 3. 创建功能分支
@@ -618,8 +618,8 @@ git checkout -b feature/your-feature-name
 ## 📞 联系方式
 
 - **邮箱**: your-email@example.com
-- **Issues**: [GitHub Issues](https://github.com/your-username/project-launcher/issues)
-- **讨论**: [GitHub Discussions](https://github.com/your-username/project-launcher/discussions)
+- **Issues**: [GitHub Issues](https://github.com/Java-Edge/project-launcher/issues)
+- **讨论**: [GitHub Discussions](https://github.com/Java-Edge/project-launcher/discussions)
 
 ---
 
