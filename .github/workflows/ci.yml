@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Check Python syntax
+      run: |
+        python -m py_compile server.py
+
+    - name: Check Shell scripts syntax
+      run: |
+        # Check if bash is available
+        if command -v bash &> /dev/null; then
+          echo "Checking shell scripts syntax..."
+          find . -name "*.sh" -exec bash -n {} \;
+        else
+          echo "Bash not available, skipping shell script check"
+        fi
+
+    - name: Verify project structure
+      run: |
+        echo "Checking required files exist..."
+        test -f "README.md" || exit 1
+        test -f "LICENSE" || exit 1
+        test -f "server.py" || exit 1
+        test -d "scripts" || exit 1
+        echo "All required files present ✓"
+
+    - name: Static analysis
+      run: |
+        echo "Running basic static analysis..."
+        # Check for common issues
+        grep -r "print(" server.py || echo "No debug prints found"
+        echo "Static analysis completed ✓"

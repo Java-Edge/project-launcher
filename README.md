@@ -5,6 +5,8 @@
   <img src="https://img.shields.io/badge/Platform-macOS-green?style=flat-square&logo=apple" alt="Platform">
   <img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="License">
   <img src="https://img.shields.io/badge/Status-Active-success?style=flat-square" alt="Status">
+  <img src="https://img.shields.io/github/stars/javaedge/project-launcher?style=flat-square" alt="Stars">
+  <img src="https://img.shields.io/github/forks/javaedge/project-launcher?style=flat-square" alt="Forks">
 </p>
 
 <p align="center">
