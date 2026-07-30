@@ -34,6 +34,14 @@ SERVICES = {
         "log_file": "frp.log",
         "url": None
     },
+    "local-control": {
+        "name": "📡 Local Control 服务器管理台",
+        "type": "management",
+        "port": 3457,
+        "status_cmd": "ps aux | grep local-control.*npm | grep -v grep",
+        "log_file": "local-control.log",
+        "url": "http://localhost:3457"
+    },
     "education-backend": {
         "name": "☕ Education Platform 后端",
         "type": "backend",

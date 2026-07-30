@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>本机 MySQL 盘点与项目使用情况</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif; line-height: 1.55; margin: 24px; }
+    h1,h2,h3 { line-height: 1.25; }
+    code { font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace; }
+    .note { padding: 12px 14px; border: 1px solid rgba(127,127,127,.35); border-radius: 10px; background: rgba(127,127,127,.08); }
+    table { border-collapse: collapse; width: 100%; margin: 10px 0 18px; }
+    th,td { border: 1px solid rgba(127,127,127,.35); padding: 8px 10px; text-align: left; vertical-align: top; }
+    th { background: rgba(127,127,127,.14); }
+    .muted { opacity: .75; }
+  </style>
+</head>
+<body>
+  <h1>本机 MySQL 盘点与项目使用情况</h1>
+  <p class="muted">生成时间：2026-07-01（北京时间）</p>
+
+  <div class="note">
+    <p>已补齐扩展版报告（包含 <code>congomall_*</code>/<code>v2x_*</code> 完整表清单与空间统计，以及从更多项目中提取的“配置-&gt;库-&gt;表/SQL证据”映射）：<a href="./mysql_inventory_report_full.html">mysql_inventory_report_full.html</a></p>
+  </div>
+
+  <h2>当前进度与阻塞</h2>
+  <div class="note">
+    <p>已可以通过本机 MySQL 的 <code>/tmp/mysql.sock</code>（socket）方式成功连接并导出库表信息。为避免把密码写入任何报告或日志，我不会在本文档里记录明文密码。</p>
+  </div>
+
+  <h2>本机 MySQL 连接诊断</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>项</th>
+        <th>检测结果</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>服务进程</td>
+        <td>检测到 <code>mysqld</code> 正在运行（路径 <code>/usr/local/mysql/bin/mysqld</code>）</td>
+      </tr>
+      <tr>
+        <td>Socket</td>
+        <td>存在 <code>/tmp/mysql.sock</code>（说明当前更可能走本地 socket 连接）</td>
+      </tr>
+      <tr>
+        <td>TCP 端口监听</td>
+        <td>未检测到常见端口 <code>3306</code> / <code>3307</code> / <code>13306</code> 的监听进程（当前更偏向仅 socket 连接）</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>数据库清单（已导出）</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>类别</th>
+        <th>数据库</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>系统库</td>
+        <td><code>mysql</code>、<code>information_schema</code>、<code>performance_schema</code>、<code>sys</code></td>
+      </tr>
+      <tr>
+        <td>业务/自建库</td>
+        <td>
+          <code>activiti</code>、<code>common_mistakes</code>、<code>congomall_basic_data</code>、<code>congomall_bff</code>、<code>congomall_cart</code>、<code>congomall_customer_user</code>、<code>congomall_message</code>、<code>congomall_order</code>、<code>congomall_pay</code>、<code>congomall_product</code>、<code>crud_test</code>、<code>ds0</code>、<code>ds1</code>、<code>dsencrypt</code>、<code>education</code>、<code>icv_dataplatform</code>、<code>imooc-security</code>、<code>jijin_db</code>、<code>nacos</code>、<code>trader</code>、<code>us_stock_monitor_dev</code>、<code>v2x_defaults</code>、<code>v2x_gateway</code>、<code>xxl_job</code>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>重点库表清单</h2>
+  <p class="muted">下表优先展示已在项目配置/代码中引用到的库（例如 <code>jijin_db</code>、<code>trader</code>）。如需其它库的完整表清单我也可以继续补充。</p>
+
+  <h3><code>jijin_db</code>（9 张表）</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>表</th>
+        <th>行数（估算）</th>
+        <th>大小（MB）</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><code>all_funds_info</code></td><td>19942</td><td>4.00</td></tr>
+      <tr><td><code>fund_estimate</code></td><td>0</td><td>0.08</td></tr>
+      <tr><td><code>holding_snapshots</code></td><td>149</td><td>0.11</td></tr>
+      <tr><td><code>positions</code></td><td>0</td><td>0.02</td></tr>
+      <tr><td><code>qdii_fund_data</code></td><td>59</td><td>0.06</td></tr>
+      <tr><td><code>system_stats</code></td><td>0</td><td>0.02</td></tr>
+      <tr><td><code>user_applications</code></td><td>5</td><td>0.08</td></tr>
+      <tr><td><code>user_holdings</code></td><td>814</td><td>0.38</td></tr>
+      <tr><td><code>user_sessions</code></td><td>19</td><td>0.08</td></tr>
+    </tbody>
+  </table>
+
+  <h3><code>trader</code>（12 张表）</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>表</th>
+        <th>行数（估算）</th>
+        <th>大小（MB）</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><code>balance_log</code></td><td>0</td><td>0.06</td></tr>
+      <tr><td><code>nasdaq100_fetch_log</code></td><td>39</td><td>0.03</td></tr>
+      <tr><td><code>nasdaq100_snapshot</code></td><td>3889</td><td>1.77</td></tr>
+      <tr><td><code>order_info</code></td><td>0</td><td>0.11</td></tr>
+      <tr><td><code>position_info</code></td><td>0</td><td>0.06</td></tr>
+      <tr><td><code>positions</code></td><td>13</td><td>0.02</td></tr>
+      <tr><td><code>qdii_fund_holdings</code></td><td>548</td><td>0.22</td></tr>
+      <tr><td><code>stock_data</code></td><td>601</td><td>0.14</td></tr>
+      <tr><td><code>stock_info</code></td><td>0</td><td>0.06</td></tr>
+      <tr><td><code>system_config</code></td><td>0</td><td>0.03</td></tr>
+      <tr><td><code>trade_info</code></td><td>0</td><td>0.11</td></tr>
+      <tr><td><code>user_account</code></td><td>1</td><td>0.08</td></tr>
+    </tbody>
+  </table>
+
+  <h2>需要你确认的信息</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>项</th>
+        <th>我当前的假设</th>
+        <th>你需要确认/补充</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>MySQL 账号/密码</td>
+        <td>账号：<code>root</code></td>
+        <td class="muted">已确认可连接，无需继续补充</td>
+      </tr>
+      <tr>
+        <td>MySQL 地址</td>
+        <td class="muted">当前更像是仅 Socket 模式（未对外监听 3306）</td>
+        <td>如果你期望应用通过 <code>localhost:3306</code> 连接，请确认 MySQL 是否启用了 TCP 监听；否则我只能基于 socket 做本机命令行盘点</td>
+      </tr>
+      <tr>
+        <td>项目目录访问</td>
+        <td>已额外扫描到你本机的几个项目目录（见下方“项目-库-表映射”）</td>
+        <td class="muted">若还有其它项目也需要纳入统计，请把项目路径发我，我再补扫</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>已发现的项目线索（来自当前工作区文档）</h2>
+  <p>在 <code>project-launcher/README.md</code> 里我发现了对部分服务与依赖的描述，其中包含 MySQL 依赖信息：</p>
+  <table>
+    <thead>
+      <tr>
+        <th>项目/服务</th>
+        <th>线索来源</th>
+        <th>MySQL 依赖（文档声明）</th>
+        <th>项目路径（文档声明）</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>基金后端服务（Flask）</td>
+        <td><code>project-launcher/README.md</code></td>
+        <td><code>localhost:3306/jijin_db</code></td>
+        <td><code>/Users/javaedge/soft/PyCharmProjects/fund</code></td>
+      </tr>
+      <tr>
+        <td>基金前端（Nuxt 3）</td>
+        <td><code>project-launcher/README.md</code></td>
+        <td class="muted">未明确（通常前端不直连 DB）</td>
+        <td><code>/Users/javaedge/soft/VSProjects/jijin</code></td>
+      </tr>
+      <tr>
+        <td>投资决策后端（Spring Boot）</td>
+        <td><code>project-launcher/README.md</code></td>
+        <td class="muted">未在该段落明确列出</td>
+        <td><code>/Users/javaedge/soft/VSProjects/invest-decision/invest-decision-backend</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>项目-库-表映射（基于代码与配置扫描）</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>项目</th>
+        <th>库（配置/默认值）</th>
+        <th>表（证据来源）</th>
+        <th>配置证据</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>基金后端（Flask）</td>
+        <td><code>jijin_db</code></td>
+        <td>
+          <code>user_holdings</code>
+          <div class="muted">证据：代码中执行 <code>CREATE TABLE IF NOT EXISTS user_holdings</code>，并在增删改查中引用该表；库中已存在该表</div>
+        </td>
+        <td class="muted">
+          <div>读取 <code>fund/.env</code> 的 <code>MYSQL_*</code> 环境变量</div>
+          <div>默认：<code>MYSQL_DATABASE=jijin_db</code>、<code>MYSQL_USER=root</code>、<code>MYSQL_PORT=3306</code></div>
+        </td>
+      </tr>
+      <tr>
+        <td>基金前端（Nuxt 3）</td>
+        <td class="muted">不直连 DB（推断）</td>
+        <td class="muted">未发现直接操作表的代码</td>
+        <td class="muted">仅在文档中出现 MySQL 依赖描述</td>
+      </tr>
+      <tr>
+        <td>投资决策后端（Spring Boot）</td>
+        <td><code>trader</code></td>
+        <td>
+          <code>positions</code>、<code>qdii_fund_holdings</code>、<code>stock_data</code>
+          <div class="muted">证据：JPA 实体注解 <code>@Table(name=...)</code>；库中已存在这些表</div>
+        </td>
+        <td class="muted">
+          <div><code>application.yml</code>：<code>jdbc:mysql://localhost:3306/trader</code></div>
+          <div><code>username=root</code>（注意：该项目通过 TCP 连接，若 MySQL 未监听 3306 端口则会连不上）</div>
+        </td>
+      </tr>
+      <tr>
+        <td>基金前端相关盘后快照（文档设计）</td>
+        <td><code>jijin_db</code></td>
+        <td>
+          <code>holding_snapshots</code>
+          <div class="muted">证据：<code>docs/AFTER_HOUR_DATA_SYSTEM.md</code> 中的 SQL 建表语句；库中已存在该表</div>
+        </td>
+        <td class="muted">目前仅发现设计文档，未在代码中找到对应实现文件</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>可继续补充的内容</h2>
+  <ul>
+    <li>补齐其它业务库（如 <code>congomall_*</code>、<code>v2x_*</code> 等）的完整表清单与空间占用统计。</li>
+    <li>对更多项目做同样的“配置 -> 库 -> 表”映射（你把项目路径发我即可）。</li>
+    <li>更深层的“表使用证据”提取：继续从 MyBatis XML、手写 SQL、迁移脚本中抽取 <code>FROM/JOIN/INSERT/UPDATE</code> 等引用，补强“哪些表被实际读写”。</li>
+  </ul>
+
+  <p class="muted">说明：表“被使用”的判定会按证据来源标注（迁移脚本/实体映射/查询语句/配置仅连接等），避免误判。</p>
+</body>
+</html>

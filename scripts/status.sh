@@ -70,6 +70,27 @@ else
 fi
 echo ""
 
+# 检查 Local Control
+echo -e "${BLUE}📡 Local Control 服务器管理台:${NC}"
+if ps aux | grep local-control.*npm | grep -v grep > /dev/null; then
+    echo -e "   进程状态: ${GREEN}✅ 运行中${NC}"
+    # 检查端口
+    if lsof -i :3457 > /dev/null 2>&1; then
+        echo -e "   端口 3457: ${GREEN}✅ 已监听${NC}"
+        echo "   🌐 管理界面: http://localhost:3457"
+    else
+        echo -e "   端口 3457: ${RED}❌ 未监听${NC}"
+    fi
+    # 检查最后一行日志
+    if [ -f "$LOGS_DIR/local-control.log" ]; then
+        local last_line=$(tail -1 "$LOGS_DIR/local-control.log")
+        echo "   最新日志: $last_line"
+    fi
+else
+    echo -e "   进程状态: ${RED}❌ 未运行${NC}"
+fi
+echo ""
+
 # 检查各个服务
 check_service "☕ Education Platform 后端服务" "back-0.0.1-SNAPSHOT.jar" ""
 check_service "🐍 基金后端服务" "flask.*fund_server" "8311"
@@ -84,8 +105,8 @@ echo "📝 日志文件:"
 if [ -d "$LOGS_DIR" ]; then
     for log in "$LOGS_DIR"/*.log; do
         if [ -f "$log" ]; then
-            local filename=$(basename "$log")
-            local size=$(du -h "$log" | cut -f1)
+            filename=$(basename "$log")
+            size=$(du -h "$log" | cut -f1)
             echo "   📄 $filename ($size)"
         fi
     done

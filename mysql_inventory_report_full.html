@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MySQL 业务库盘点与项目使用映射（扩展版）</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif; line-height: 1.55; margin: 24px; }
+    h1,h2,h3 { line-height: 1.25; }
+    code,pre { font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace; }
+    .note { padding: 12px 14px; border: 1px solid rgba(127,127,127,.35); border-radius: 10px; background: rgba(127,127,127,.08); }
+    table { border-collapse: collapse; width: 100%; margin: 10px 0 18px; }
+    th,td { border: 1px solid rgba(127,127,127,.35); padding: 8px 10px; text-align: left; vertical-align: top; }
+    th { background: rgba(127,127,127,.14); }
+    details { border: 1px solid rgba(127,127,127,.28); border-radius: 10px; padding: 10px 12px; margin: 10px 0 14px; background: rgba(127,127,127,.05); }
+    details > summary { cursor: pointer; font-weight: 650; }
+    .muted { opacity: .75; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 1000px) { .grid2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<h1>MySQL 业务库盘点与项目使用映射（扩展版）</h1>
+<p class="muted">生成时间：2026-07-01 15:57:03 UTC+08:00（北京时间）</p>
+<div class="note"><p>说明：本报告基于本机 MySQL 的 socket 连接导出（<code>/tmp/mysql.sock</code>），并扫描了你本机的 IDEAProjects 与 PyCharmProjects 目录来提取 MySQL 配置与表使用证据（MyBatis XML / SQL / ORM / 手写 SQL）。</p></div>
+<h2>业务库空间总览</h2>
+<table><thead><tr><th>数据库</th><th>表数</th><th>总大小（MB）</th></tr></thead><tbody>
+<tr><td><code>education</code></td><td>34</td><td>52.81</td></tr>
+<tr><td><code>jijin_db</code></td><td>9</td><td>4.81</td></tr>
+<tr><td><code>congomall_message</code></td><td>97</td><td>3.04</td></tr>
+<tr><td><code>congomall_product</code></td><td>54</td><td>2.70</td></tr>
+<tr><td><code>trader</code></td><td>12</td><td>2.69</td></tr>
+<tr><td><code>us_stock_monitor_dev</code></td><td>1</td><td>1.52</td></tr>
+<tr><td><code>congomall_customer_user</code></td><td>48</td><td>1.50</td></tr>
+<tr><td><code>v2x_defaults</code></td><td>53</td><td>1.22</td></tr>
+<tr><td><code>activiti</code></td><td>26</td><td>1.16</td></tr>
+<tr><td><code>congomall_order</code></td><td>33</td><td>1.02</td></tr>
+<tr><td><code>v2x_gateway</code></td><td>6</td><td>0.56</td></tr>
+<tr><td><code>congomall_cart</code></td><td>17</td><td>0.52</td></tr>
+<tr><td><code>nacos</code></td><td>12</td><td>0.39</td></tr>
+<tr><td><code>congomall_basic_data</code></td><td>1</td><td>0.27</td></tr>
+<tr><td><code>xxl_job</code></td><td>8</td><td>0.23</td></tr>
+<tr><td><code>imooc-security</code></td><td>10</td><td>0.13</td></tr>
+<tr><td><code>congomall_bff</code></td><td>4</td><td>0.13</td></tr>
+<tr><td><code>common_mistakes</code></td><td>3</td><td>0.09</td></tr>
+<tr><td><code>crud_test</code></td><td>1</td><td>0.09</td></tr>
+<tr><td><code>icv_dataplatform</code></td><td>3</td><td>0.09</td></tr>
+<tr><td><code>ds0</code></td><td>5</td><td>0.08</td></tr>
+<tr><td><code>ds1</code></td><td>5</td><td>0.08</td></tr>
+<tr><td><code>dsencrypt</code></td><td>5</td><td>0.08</td></tr>
+<tr><td><code>congomall_pay</code></td><td>1</td><td>0.03</td></tr>
+</tbody></table>
+<h2>congomall_* / v2x_* 完整表清单</h2>
+<p class="muted">以下为你点名的两类业务库的“完整表清单 + 行数（估算）+ 空间占用”。</p>
+<details><summary><code>congomall_basic_data</code>：1 张表，0.27 MB</summary>
+<table><thead><tr><th>表</th><th>行数（估算）</th><th>大小（MB）</th><th>引擎</th></tr></thead><tbody>
+<tr><td><code>region_info</code></td><td>3225</td><td>0.27</td><td>InnoDB</td></tr>
+</tbody></table></details>
+<details><summary><code>congomall_bff</code>：4 张表，0.13 MB</summary>
+<table><thead><tr><th>表</th><th>行数（估算）</th><th>大小（MB）</th><th>引擎</th></tr></thead><tbody>
+<tr><td><code>donation</code></td><td>11</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>navigation</code></td><td>5</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>panel</code></td><td>9</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>panel_product_relation</code></td><td>38</td><td>0.03</td><td>InnoDB</td></tr>
+</tbody></table></details>
+<details><summary><code>congomall_cart</code>：17 张表，0.52 MB</summary>
+<table><thead><tr><th>表</th><th>行数（估算）</th><th>大小（MB）</th><th>引擎</th></tr></thead><tbody>
+<tr><td><code>cart_item_0</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>cart_item_1</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>cart_item_10</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>cart_item_11</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>cart_item_12</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>cart_item_13</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>cart_item_14</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>cart_item_15</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>cart_item_2</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>cart_item_3</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>cart_item_4</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>cart_item_5</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>cart_item_6</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>cart_item_7</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>cart_item_8</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>cart_item_9</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>undo_log</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+</tbody></table></details>
+<details><summary><code>congomall_customer_user</code>：48 张表，1.50 MB</summary>
+<table><thead><tr><th>表</th><th>行数（估算）</th><th>大小（MB）</th><th>引擎</th></tr></thead><tbody>
+<tr><td><code>customer_user_0</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>customer_user_1</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>customer_user_10</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>customer_user_11</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>customer_user_12</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>customer_user_13</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>customer_user_14</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>customer_user_15</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>customer_user_2</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>customer_user_3</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>customer_user_4</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>customer_user_5</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>customer_user_6</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>customer_user_7</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>customer_user_8</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>customer_user_9</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>operation_log_0</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>operation_log_1</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>operation_log_10</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>operation_log_11</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>operation_log_12</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>operation_log_13</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>operation_log_14</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>operation_log_15</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>operation_log_2</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>operation_log_3</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>operation_log_4</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>operation_log_5</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>operation_log_6</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>operation_log_7</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>operation_log_8</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>operation_log_9</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>receive_address_0</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>receive_address_1</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>receive_address_10</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>receive_address_11</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>receive_address_12</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>receive_address_13</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>receive_address_14</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>receive_address_15</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>receive_address_2</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>receive_address_3</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>receive_address_4</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>receive_address_5</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>receive_address_6</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>receive_address_7</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>receive_address_8</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>receive_address_9</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+</tbody></table></details>
+<details><summary><code>congomall_message</code>：97 张表，3.04 MB</summary>
+<table><thead><tr><th>表</th><th>行数（估算）</th><th>大小（MB）</th><th>引擎</th></tr></thead><tbody>
+<tr><td><code>mail_template</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2023_m1</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2023_m10</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2023_m11</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2023_m12</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2023_m2</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2023_m3</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2023_m4</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2023_m5</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2023_m6</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2023_m7</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2023_m8</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2023_m9</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2024_m1</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2024_m10</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2024_m11</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2024_m12</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2024_m2</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2024_m3</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2024_m4</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2024_m5</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2024_m6</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2024_m7</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2024_m8</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2024_m9</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2025_m1</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2025_m10</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2025_m11</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2025_m12</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2025_m2</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2025_m3</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2025_m4</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2025_m5</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2025_m6</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2025_m7</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2025_m8</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2025_m9</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2026_m1</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2026_m10</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2026_m11</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2026_m12</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2026_m2</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2026_m3</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2026_m4</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2026_m5</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2026_m6</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2026_m7</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2026_m8</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_2026_m9</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2023_m1</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2023_m10</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2023_m11</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2023_m12</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2023_m2</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2023_m3</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2023_m4</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2023_m5</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2023_m6</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2023_m7</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2023_m8</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2023_m9</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2024_m1</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2024_m10</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2024_m11</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2024_m12</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2024_m2</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2024_m3</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2024_m4</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2024_m5</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2024_m6</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2024_m7</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2024_m8</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2024_m9</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2025_m1</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2025_m10</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2025_m11</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2025_m12</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2025_m2</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2025_m3</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2025_m4</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2025_m5</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2025_m6</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2025_m7</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2025_m8</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2025_m9</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2026_m1</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2026_m10</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2026_m11</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2026_m12</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2026_m2</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2026_m3</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2026_m4</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2026_m5</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2026_m6</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2026_m7</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2026_m8</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>send_record_extend_2026_m9</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+</tbody></table></details>
+<details><summary><code>congomall_order</code>：33 张表，1.02 MB</summary>
+<table><thead><tr><th>表</th><th>行数（估算）</th><th>大小（MB）</th><th>引擎</th></tr></thead><tbody>
+<tr><td><code>order_info_0</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_info_1</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_info_10</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_info_11</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_info_12</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_info_13</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_info_14</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_info_15</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_info_2</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_info_3</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_info_4</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_info_5</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_info_6</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_info_7</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_info_8</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_info_9</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_item_0</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_item_1</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_item_10</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_item_11</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_item_12</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_item_13</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_item_14</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_item_15</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_item_2</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_item_3</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_item_4</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_item_5</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_item_6</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_item_7</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_item_8</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>order_item_9</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>undo_log</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+</tbody></table></details>
+<details><summary><code>congomall_pay</code>：1 张表，0.03 MB</summary>
+<table><thead><tr><th>表</th><th>行数（估算）</th><th>大小（MB）</th><th>引擎</th></tr></thead><tbody>
+<tr><td><code>pay_info</code></td><td>4</td><td>0.03</td><td>InnoDB</td></tr>
+</tbody></table></details>
+<details><summary><code>congomall_product</code>：54 张表，2.70 MB</summary>
+<table><thead><tr><th>表</th><th>行数（估算）</th><th>大小（MB）</th><th>引擎</th></tr></thead><tbody>
+<tr><td><code>product_attribute</code></td><td>3</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>product_attribute_category</code></td><td>2</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>product_attribute_value</code></td><td>2</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>product_brand</code></td><td>2</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>product_category</code></td><td>2</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>product_comment_0</code></td><td>0</td><td>0.06</td><td>InnoDB</td></tr>
+<tr><td><code>product_comment_1</code></td><td>0</td><td>0.06</td><td>InnoDB</td></tr>
+<tr><td><code>product_comment_10</code></td><td>0</td><td>0.06</td><td>InnoDB</td></tr>
+<tr><td><code>product_comment_11</code></td><td>0</td><td>0.06</td><td>InnoDB</td></tr>
+<tr><td><code>product_comment_12</code></td><td>0</td><td>0.06</td><td>InnoDB</td></tr>
+<tr><td><code>product_comment_13</code></td><td>0</td><td>0.06</td><td>InnoDB</td></tr>
+<tr><td><code>product_comment_14</code></td><td>0</td><td>0.06</td><td>InnoDB</td></tr>
+<tr><td><code>product_comment_15</code></td><td>0</td><td>0.06</td><td>InnoDB</td></tr>
+<tr><td><code>product_comment_2</code></td><td>0</td><td>0.06</td><td>InnoDB</td></tr>
+<tr><td><code>product_comment_3</code></td><td>0</td><td>0.06</td><td>InnoDB</td></tr>
+<tr><td><code>product_comment_4</code></td><td>0</td><td>0.06</td><td>InnoDB</td></tr>
+<tr><td><code>product_comment_5</code></td><td>0</td><td>0.06</td><td>InnoDB</td></tr>
+<tr><td><code>product_comment_6</code></td><td>0</td><td>0.06</td><td>InnoDB</td></tr>
+<tr><td><code>product_comment_7</code></td><td>0</td><td>0.06</td><td>InnoDB</td></tr>
+<tr><td><code>product_comment_8</code></td><td>0</td><td>0.06</td><td>InnoDB</td></tr>
+<tr><td><code>product_comment_9</code></td><td>0</td><td>0.06</td><td>InnoDB</td></tr>
+<tr><td><code>product_sku_0</code></td><td>38</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_sku_1</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_sku_10</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_sku_11</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_sku_12</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_sku_13</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_sku_14</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_sku_15</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_sku_2</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_sku_3</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_sku_4</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_sku_5</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_sku_6</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_sku_7</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_sku_8</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_sku_9</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_spu_0</code></td><td>24</td><td>0.08</td><td>InnoDB</td></tr>
+<tr><td><code>product_spu_1</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_spu_10</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_spu_11</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_spu_12</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_spu_13</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_spu_14</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_spu_15</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_spu_2</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_spu_3</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_spu_4</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_spu_5</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_spu_6</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_spu_7</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_spu_8</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>product_spu_9</code></td><td>0</td><td>0.05</td><td>InnoDB</td></tr>
+<tr><td><code>undo_log</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+</tbody></table></details>
+<details><summary><code>v2x_defaults</code>：53 张表，1.22 MB</summary>
+<table><thead><tr><th>表</th><th>行数（估算）</th><th>大小（MB）</th><th>引擎</th></tr></thead><tbody>
+<tr><td><code>b_business_topology</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>b_business_topology_unit</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>b_data_set</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>b_data_set_param</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>b_datasource</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>b_device</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>b_device_20230307</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>b_device_20230410</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>b_device_20240313</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>b_device_command</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>b_device_model</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>b_device_model_attribute</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>b_device_port</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>b_device_update</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>b_online_record</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>b_order</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>b_product</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>b_push</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>b_push_rule</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>b_push_rule_param</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>b_warn</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>b_warn_rule</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>b_warn_rule_param</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>c_appendix</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>c_application</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>c_area</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>c_dictionary</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>c_file</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>c_login_log</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>c_menu</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>c_menu_copy1</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>c_opt_log</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>c_opt_log_ext</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>c_org</code></td><td>0</td><td>0.06</td><td>InnoDB</td></tr>
+<tr><td><code>c_parameter</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>c_resource</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>c_resource_copy1</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>c_role</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>c_role_authority</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>c_role_org</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>c_station</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>c_user</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>c_user_role</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>e_block_list</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>e_msg</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>e_msg_receive</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>e_msg_template</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>e_rate_limiter</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>e_sms_send_status</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>e_sms_task</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>e_sms_template</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+<tr><td><code>undo_log</code></td><td>0</td><td>0.03</td><td>InnoDB</td></tr>
+<tr><td><code>untitled</code></td><td>0</td><td>0.02</td><td>InnoDB</td></tr>
+</tbody></table></details>
+<details><summary><code>v2x_gateway</code>：6 张表，0.56 MB</summary>
+<table><thead><tr><th>表</th><th>行数（估算）</th><th>大小（MB）</th><th>引擎</th></tr></thead><tbody>
+<tr><td><code>t_api_access_log</code></td><td>0</td><td>0.09</td><td>InnoDB</td></tr>
+<tr><td><code>t_auth_credential</code></td><td>1</td><td>0.09</td><td>InnoDB</td></tr>
+<tr><td><code>t_junction_api_permission</code></td><td>9</td><td>0.09</td><td>InnoDB</td></tr>
+<tr><td><code>t_junction_info</code></td><td>177</td><td>0.14</td><td>InnoDB</td></tr>
+<tr><td><code>t_mqtt_subscription</code></td><td>40</td><td>0.08</td><td>InnoDB</td></tr>
+<tr><td><code>t_system_config</code></td><td>5</td><td>0.06</td><td>InnoDB</td></tr>
+</tbody></table></details>
+<h2>项目 -> 库 -> 表 使用映射</h2>
+<p class="muted">只展示：命中 <code>congomall_*</code>/<code>v2x_*</code> 库的项目，或确实提取到了 SQL/表使用证据的项目（避免列表过长）。</p>
+<details><summary><code>ddd-mall</code>（配置命中库：congomall-order, congomall_basic_data, congomall_bff, congomall_cart, congomall_customer_user, congomall_message, congomall_order, congomall_pay, congomall_product, mall_user, pay_center_test；证据文件：config 29 / sql 0）</summary>
+</details>
+<details><summary><code>monitor-manager</code>（配置命中库：monitor, monitor_road_test, monitor_tmp, risk；证据文件：config 7 / sql 9）</summary>
+<h3>未在当前 MySQL 中找到的表名</h3>
+<p><code>statistic_day</code>、<code>statistic_new_day</code>、<code>statistic_today</code>、<code>statistic_total</code>、<code>t_job</code>、<code>t_job_log</code>、<code>vehicle_loc</code>、<code>vehicle_switch</code>、<code>vehicle_track</code></p>
+</details>
+<details><summary><code>v2x-api-gateway</code>（配置命中库：v2x_gateway；证据文件：config 4 / sql 0）</summary>
+</details>
+</body>
+</html>
+

@@ -94,7 +94,36 @@ npm run serve -- --port 8082
 
 **状态**: ✅ 运行中
 
-### 4. 🔴 Redis 缓存服务
+### 4. 📡 Local Control 服务器管理台
+
+**项目路径**: `/Users/javaedge/soft/VSProjects/local-control`
+
+**启动命令**:
+```bash
+cd /Users/javaedge/soft/VSProjects/local-control
+npm run dev
+```
+
+**端口**: 3457
+
+**技术栈**: Node.js + Express + Socket.IO
+
+**功能**:
+- 🌐 Web-based server management
+- 🖥️ 自动 SSH 登录
+- 📁 文件浏览器
+- 💻 远程终端管理
+- 🔄 实时服务器状态监控
+
+**状态检查**: 
+```bash
+# 访问 http://localhost:3457 查看管理界面
+curl -s http://localhost:3457 | grep -q "Local Control" && echo "✅ 服务运行正常" || echo "❌ 服务异常"
+```
+
+**状态**: ✅ 运行中
+
+### 5. 🔴 Redis 缓存服务
 
 **项目路径**: 系统服务 (Redis)
 
@@ -120,7 +149,7 @@ redis-cli ping  # 返回 PONG 表示正常运行
 
 **状态**: ✅ 运行中
 
-### 5. ☕ Education Platform 后端服务 (Spring Boot)
+### 6. ☕ Education Platform 后端服务 (Spring Boot)
 
 **项目路径**: `/Users/javaedge/soft/IDEAProjects/education-platform/education-back/target`
 
@@ -582,58 +611,6 @@ git checkout -b feature/your-feature-name
 - [ ] 测试了新功能
 - [ ] 遵循了代码风格规范
 
-**提交PR**:
-1. 推送到您的fork
-2. 创建Pull Request
-3. 描述您的更改和改进
-4. 等待审查和合并
-
-### 📝 文档贡献
-
-帮助我们改进文档：
-- 完善使用说明
-- 添加更多示例
-- 翻译文档到其他语言
-- 修复文档中的错误
-
-### 🎁 其他贡献方式
-
-- 🌟 **Star项目**: 给项目一个star支持
-- 🐦 **宣传推广**: 分享给其他开发者
-- 💬 **社区讨论**: 参与项目讨论
-- 📢 **案例分享**: 分享您的使用经验
-
 ## 📄 许可证
 
 本项目采用 [MIT](LICENSE) 许可证。
-
-## 🙏 致谢
-
-感谢所有为这个项目做出贡献的人：
-
-- **用户反馈**: 感谢您的宝贵建议和改进意见
-- **代码贡献**: 感谢所有提交PR的贡献者
-- **社区支持**: 感谢开源社区的帮助和鼓励
-
-## 📞 联系方式
-
-- **邮箱**: your-email@example.com
-- **Issues**: [GitHub Issues](https://github.com/Java-Edge/project-launcher/issues)
-- **讨论**: [GitHub Discussions](https://github.com/Java-Edge/project-launcher/discussions)
-
----
-
-## 🌟 支持项目
-
-如果您觉得这个项目有用，请考虑：
-
-- ⭐ **Star this repo** - 给项目一个star
-- 🍴 **Fork it** - 创建您自己的版本
-- 🚀 **Share it** - 分享给其他开发者
-- 💖 **Contribute** - 参与项目开发
-
----
-
-**🚀 让本地开发环境管理变得更简单！**
-
-现在您可以轻松管理所有本地开发服务了！🚀

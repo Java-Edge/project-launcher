@@ -52,6 +52,9 @@ stop_service() {
     echo ""
 }
 
+# 停止管理控制服务
+stop_service "📡 Local Control 服务器管理台" "local-control.*npm"
+
 # 停止前端服务（按依赖顺序的反序）
 stop_service "📈 投资决策前端" "invest-decision-frontend.*npm"
 stop_service "💰 基金项目前端" "jijin.*npm"
