@@ -124,6 +124,9 @@ class ServiceManager:
                     capture_output=True
                 )
                 port_listening = result.returncode == 0
+                # ps grep patterns are brittle (e.g. dev servers spawned without "npm"
+                # in their command line), so trust an actual listening port as well
+                is_running = is_running or port_listening
                 
             return {
                 "running": is_running,
