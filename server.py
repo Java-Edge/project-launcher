@@ -17,10 +17,12 @@ LOGS_DIR = PROJECT_ROOT / "logs"
 SCRIPTS_DIR = PROJECT_ROOT / "scripts"
 
 # 服务配置
+# group: 业务系统分组标识，用于按架构层级（而非单纯的前端/后端类型）展示服务
 SERVICES = {
     "redis": {
         "name": "🔴 Redis 缓存服务",
         "type": "infrastructure",
+        "group": "infra",
         "port": 6379,
         "status_cmd": "brew services list | grep redis | grep started",
         "log_file": "redis.log",
@@ -29,6 +31,7 @@ SERVICES = {
     "frp": {
         "name": "🌐 FRP 内网穿透服务",
         "type": "infrastructure", 
+        "group": "infra",
         "port": None,
         "status_cmd": "ps aux | grep frpc | grep -v grep",
         "log_file": "frp.log",
@@ -37,6 +40,7 @@ SERVICES = {
     "local-control": {
         "name": "📡 Local Control 服务器管理台",
         "type": "management",
+        "group": "local-control",
         "port": 3457,
         "status_cmd": "ps aux | grep local-control.*npm | grep -v grep",
         "log_file": "local-control.log",
@@ -45,6 +49,7 @@ SERVICES = {
     "education-backend": {
         "name": "☕ Education Platform 后端",
         "type": "backend",
+        "group": "education",
         "port": None,
         "status_cmd": "ps aux | grep back-0.0.1-SNAPSHOT.jar | grep -v grep",
         "log_file": "education-backend.log",
@@ -53,6 +58,7 @@ SERVICES = {
     "fund-backend": {
         "name": "🐍 基金后端服务 (Flask)",
         "type": "backend",
+        "group": "fund",
         "port": 8311,
         "status_cmd": "ps aux | grep flask.*fund_server | grep -v grep",
         "log_file": "fund-backend.log",
@@ -61,6 +67,7 @@ SERVICES = {
     "invest-decision-backend": {
         "name": "📊 投资决策后端",
         "type": "backend", 
+        "group": "invest-decision",
         "port": None,
         "status_cmd": "ps aux | grep invest-decision-0.0.1-SNAPSHOT.jar | grep -v grep",
         "log_file": "invest-decision-backend.log",
@@ -69,6 +76,7 @@ SERVICES = {
     "java-interview": {
         "name": "📚 Java 面试教程",
         "type": "frontend",
+        "group": "java-interview",
         "port": 8081,
         "status_cmd": "ps aux | grep Java-Interview-Tutorial.*npm | grep -v grep",
         "log_file": "java-interview.log",
@@ -77,6 +85,7 @@ SERVICES = {
     "code-select": {
         "name": "🖥️ Code Select 前端",
         "type": "frontend",
+        "group": "education",
         "port": 8082,
         "status_cmd": "ps aux | grep code-select-front.*npm | grep -v grep",
         "log_file": "code-select.log",
@@ -85,6 +94,7 @@ SERVICES = {
     "fund-frontend": {
         "name": "💰 基金项目前端 (Nuxt)",
         "type": "frontend",
+        "group": "fund",
         "port": 3000,
         "status_cmd": "ps aux | grep jijin.*npm | grep -v grep",
         "log_file": "fund-frontend.log",
@@ -93,11 +103,29 @@ SERVICES = {
     "invest-decision-frontend": {
         "name": "📈 投资决策前端 (Vite)",
         "type": "frontend",
+        "group": "invest-decision",
         "port": 5173,
         "status_cmd": "ps aux | grep invest-decision-frontend.*npm | grep -v grep",
         "log_file": "invest-decision-frontend.log",
         "url": "http://localhost:5173"
     }
+}
+
+# 业务分组展示顺序及标题；chain=True 表示该组是前后端配对的完整业务链路，需展示链路健康度
+GROUP_ORDER = ["infra", "local-control", "education", "fund", "invest-decision", "java-interview"]
+GROUP_META = {
+    "infra": {"title": "🏗️ 基础设施服务", "chain": False},
+    "local-control": {"title": "🧭 本地服务管理台", "chain": False},
+    "education": {"title": "🎓 Education Platform（后端 + Code Select 前端）", "chain": True},
+    "fund": {"title": "💰 基金项目（Flask 后端 + Nuxt 前端）", "chain": True},
+    "invest-decision": {"title": "📊 投资决策（后端 + Vite 前端）", "chain": True},
+    "java-interview": {"title": "📚 Java 面试教程", "chain": False},
+}
+TYPE_LABELS = {
+    "infrastructure": "基础设施",
+    "management": "管理服务",
+    "backend": "后端服务",
+    "frontend": "前端应用",
 }
 
 class ServiceManager:
@@ -271,6 +299,73 @@ class WebHandler(BaseHTTPRequestHandler):
         else:
             self.send_json({'success': False, 'message': '未指定脚本'})
             
+    def render_service_card(self, service_id, service, status):
+        """渲染单个服务卡片"""
+        running = status.get("running", False)
+        card_class = "running" if running else "stopped"
+        badge_class = "status-running" if running else "status-stopped"
+        badge_text = "运行中" if running else "未运行"
+        
+        port_info = ""
+        if service.get("port"):
+            listening_text = "监听中" if status.get("port_listening") else "未监听"
+            port_info = f'''
+                                    <div class="info-item">
+                                        <span class="info-label">端口:</span>
+                                        <span class="info-value" id="port-value-{service_id}">{service["port"]} ({listening_text})</span>
+                                    </div>'''
+        
+        visit_btn = ""
+        if service.get("url"):
+            display = "inline-block" if running else "none"
+            visit_btn = f'<a href="{service["url"]}" target="_blank" class="btn btn-success" id="visit-{service_id}" style="display:{display}">访问应用</a>\n                                    '
+        
+        return f'''
+                            <div class="service-card {card_class}" id="card-{service_id}">
+                                <div class="service-header">
+                                    <div class="service-name">{service["name"]}</div>
+                                    <div class="status-badge {badge_class}" id="badge-{service_id}">{badge_text}</div>
+                                </div>
+                                <div class="service-info">
+                                    <div class="info-item">
+                                        <span class="info-label">类型:</span>
+                                        <span class="info-value">{TYPE_LABELS.get(service["type"], service["type"])}</span>
+                                    </div>{port_info}
+                                </div>
+                                <div class="service-actions" id="actions-{service_id}">
+                                    {visit_btn}<button onclick="showLogs('{service_id}')" class="btn btn-primary">查看日志</button>
+                                </div>
+                            </div>'''
+    
+    def render_group(self, group_id, status_map):
+        """按业务系统分组渲染，chain 分组会附带全链路健康度徽标"""
+        meta = GROUP_META[group_id]
+        service_ids = [sid for sid, svc in self.service_manager.services.items() if svc.get("group") == group_id]
+        
+        chain_html = ""
+        if meta["chain"]:
+            running_count = sum(1 for sid in service_ids if status_map[sid]["running"])
+            total = len(service_ids)
+            if running_count == total:
+                chain_class, chain_text = "chain-ok", "🟢 全链路正常"
+            elif running_count == 0:
+                chain_class, chain_text = "chain-down", "🔴 全部离线"
+            else:
+                chain_class, chain_text = "chain-warn", "🟡 部分异常"
+            chain_html = f'<div class="chain-badge {chain_class}" id="chain-{group_id}">{chain_text}</div>'
+        
+        cards_html = "\n".join(
+            self.render_service_card(sid, self.service_manager.services[sid], status_map[sid])
+            for sid in service_ids
+        )
+        
+        return f'''
+                    <div class="service-group">
+                        <div class="group-title"><span>{meta["title"]}</span>{chain_html}</div>
+                        <div class="service-grid">{cards_html}
+                        </div>
+                    </div>'''
+            
     def send_404(self):
         self.send_response(404)
         self.send_header('Content-Type', 'text/plain')
@@ -369,7 +464,23 @@ class WebHandler(BaseHTTPRequestHandler):
             color: #333;
             padding-bottom: 10px;
             border-bottom: 2px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
         }
+        
+        .chain-badge {
+            font-size: 0.6em;
+            font-weight: bold;
+            padding: 5px 14px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+        
+        .chain-ok { background: #d4edda; color: #155724; }
+        .chain-warn { background: #fff3cd; color: #856404; }
+        .chain-down { background: #f8d7da; color: #721c24; }
         
         .service-grid {
             display: grid;
@@ -504,7 +615,12 @@ class WebHandler(BaseHTTPRequestHandler):
         '''
         
     def get_js(self):
+        group_services = {
+            gid: [sid for sid, svc in self.service_manager.services.items() if svc.get("group") == gid]
+            for gid in GROUP_ORDER
+        }
         return '''
+        const GROUP_SERVICES = ''' + json.dumps(group_services, ensure_ascii=False) + ''';
         let currentService = null;
         let refreshInterval = null;
         
@@ -528,7 +644,53 @@ class WebHandler(BaseHTTPRequestHandler):
             document.getElementById('frontend-count').textContent = frontend;
             document.getElementById('backend-count').textContent = backend;
             
+            updateServiceCards(data);
+            updateChainBadges(data);
+            
             document.getElementById('last-update').textContent = new Date().toLocaleString();
+        }
+        
+        function updateServiceCards(data) {
+            for (const [serviceId, status] of Object.entries(data)) {
+                const card = document.getElementById(`card-${serviceId}`);
+                const badge = document.getElementById(`badge-${serviceId}`);
+                if (!card || !badge) continue;
+                
+                card.classList.toggle('running', status.running);
+                card.classList.toggle('stopped', !status.running);
+                badge.classList.toggle('status-running', status.running);
+                badge.classList.toggle('status-stopped', !status.running);
+                badge.textContent = status.running ? '运行中' : '未运行';
+                
+                const visitBtn = document.getElementById(`visit-${serviceId}`);
+                if (visitBtn) visitBtn.style.display = status.running ? 'inline-block' : 'none';
+                
+                const portValue = document.getElementById(`port-value-${serviceId}`);
+                if (portValue && status.port) {
+                    portValue.textContent = `${status.port} (${status.port_listening ? '监听中' : '未监听'})`;
+                }
+            }
+        }
+        
+        function updateChainBadges(data) {
+            for (const [groupId, serviceIds] of Object.entries(GROUP_SERVICES)) {
+                const chainEl = document.getElementById(`chain-${groupId}`);
+                if (!chainEl) continue;
+                
+                const runningCount = serviceIds.filter(id => data[id] && data[id].running).length;
+                chainEl.classList.remove('chain-ok', 'chain-warn', 'chain-down');
+                
+                if (runningCount === serviceIds.length) {
+                    chainEl.textContent = '🟢 全链路正常';
+                    chainEl.classList.add('chain-ok');
+                } else if (runningCount === 0) {
+                    chainEl.textContent = '🔴 全部离线';
+                    chainEl.classList.add('chain-down');
+                } else {
+                    chainEl.textContent = '🟡 部分异常';
+                    chainEl.classList.add('chain-warn');
+                }
+            }
         }
         
         function showLogs(serviceId) {
@@ -592,6 +754,20 @@ class WebHandler(BaseHTTPRequestHandler):
         '''
         
     def send_main_page(self):
+        status_map = self.service_manager.get_all_status()
+        groups_html = "\n".join(self.render_group(gid, status_map) for gid in GROUP_ORDER)
+        
+        running_count = sum(1 for s in status_map.values() if s["running"])
+        total_count = len(status_map)
+        frontend_count = sum(
+            1 for sid, s in status_map.items()
+            if self.service_manager.services[sid]["type"] == "frontend" and s["running"]
+        )
+        backend_count = sum(
+            1 for sid, s in status_map.items()
+            if self.service_manager.services[sid]["type"] == "backend" and s["running"]
+        )
+        
         html = '''
         <!DOCTYPE html>
         <html lang="zh-CN">
@@ -610,19 +786,19 @@ class WebHandler(BaseHTTPRequestHandler):
                 
                 <div class="stats">
                     <div class="stat-card">
-                        <div class="stat-number" id="running-count">0</div>
+                        <div class="stat-number" id="running-count">''' + str(running_count) + '''</div>
                         <div class="stat-label">运行中</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number" id="total-count">9</div>
+                        <div class="stat-number" id="total-count">''' + str(total_count) + '''</div>
                         <div class="stat-label">总服务数</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number" id="frontend-count">0</div>
+                        <div class="stat-number" id="frontend-count">''' + str(frontend_count) + '''</div>
                         <div class="stat-label">前端应用</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number" id="backend-count">0</div>
+                        <div class="stat-number" id="backend-count">''' + str(backend_count) + '''</div>
                         <div class="stat-label">后端服务</div>
                     </div>
                 </div>
@@ -633,194 +809,7 @@ class WebHandler(BaseHTTPRequestHandler):
                     <button onclick="updateDashboard()" class="btn btn-primary">🔄 刷新状态</button>
                 </div>
                 
-                <div class="services">
-                    <div class="service-group">
-                        <div class="group-title">🏗️ 基础设施服务</div>
-                        <div class="service-grid">
-                            <div class="service-card">
-                                <div class="service-header">
-                                    <div class="service-name">🔴 Redis 缓存服务</div>
-                                    <div class="status-badge status-running">运行中</div>
-                                </div>
-                                <div class="service-info">
-                                    <div class="info-item">
-                                        <span class="info-label">类型:</span>
-                                        <span class="info-value">基础设施</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">端口:</span>
-                                        <span class="info-value">6379 (监听中)</span>
-                                    </div>
-                                </div>
-                                <div class="service-actions">
-                                    <button onclick="showLogs('redis')" class="btn btn-primary">查看日志</button>
-                                </div>
-                            </div>
-                            
-                            <div class="service-card">
-                                <div class="service-header">
-                                    <div class="service-name">🌐 FRP 内网穿透服务</div>
-                                    <div class="status-badge status-running">运行中</div>
-                                </div>
-                                <div class="service-info">
-                                    <div class="info-item">
-                                        <span class="info-label">类型:</span>
-                                        <span class="info-value">基础设施</span>
-                                    </div>
-                                </div>
-                                <div class="service-actions">
-                                    <button onclick="showLogs('frp')" class="btn btn-primary">查看日志</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="service-group">
-                        <div class="group-title">⚙️ 后端服务</div>
-                        <div class="service-grid">
-                            <div class="service-card">
-                                <div class="service-header">
-                                    <div class="service-name">☕ Education Platform 后端</div>
-                                    <div class="status-badge status-running">运行中</div>
-                                </div>
-                                <div class="service-info">
-                                    <div class="info-item">
-                                        <span class="info-label">类型:</span>
-                                        <span class="info-value">后端服务</span>
-                                    </div>
-                                </div>
-                                <div class="service-actions">
-                                    <button onclick="showLogs('education-backend')" class="btn btn-primary">查看日志</button>
-                                </div>
-                            </div>
-                            
-                            <div class="service-card">
-                                <div class="service-header">
-                                    <div class="service-name">🐍 基金后端服务 (Flask)</div>
-                                    <div class="status-badge status-running">运行中</div>
-                                </div>
-                                <div class="service-info">
-                                    <div class="info-item">
-                                        <span class="info-label">类型:</span>
-                                        <span class="info-value">后端服务</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">端口:</span>
-                                        <span class="info-value">8311 (监听中)</span>
-                                    </div>
-                                </div>
-                                <div class="service-actions">
-                                    <a href="http://localhost:8311" target="_blank" class="btn btn-success">访问应用</a>
-                                    <button onclick="showLogs('fund-backend')" class="btn btn-primary">查看日志</button>
-                                </div>
-                            </div>
-                            
-                            <div class="service-card">
-                                <div class="service-header">
-                                    <div class="service-name">📊 投资决策后端</div>
-                                    <div class="status-badge status-running">运行中</div>
-                                </div>
-                                <div class="service-info">
-                                    <div class="info-item">
-                                        <span class="info-label">类型:</span>
-                                        <span class="info-value">后端服务</span>
-                                    </div>
-                                </div>
-                                <div class="service-actions">
-                                    <button onclick="showLogs('invest-decision-backend')" class="btn btn-primary">查看日志</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="service-group">
-                        <div class="group-title">🎨 前端应用</div>
-                        <div class="service-grid">
-                            <div class="service-card">
-                                <div class="service-header">
-                                    <div class="service-name">📚 Java 面试教程</div>
-                                    <div class="status-badge status-running">运行中</div>
-                                </div>
-                                <div class="service-info">
-                                    <div class="info-item">
-                                        <span class="info-label">类型:</span>
-                                        <span class="info-value">前端应用</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">端口:</span>
-                                        <span class="info-value">8081 (监听中)</span>
-                                    </div>
-                                </div>
-                                <div class="service-actions">
-                                    <a href="http://localhost:8081" target="_blank" class="btn btn-success">访问应用</a>
-                                    <button onclick="showLogs('java-interview')" class="btn btn-primary">查看日志</button>
-                                </div>
-                            </div>
-                            
-                            <div class="service-card">
-                                <div class="service-header">
-                                    <div class="service-name">🖥️ Code Select 前端</div>
-                                    <div class="status-badge status-running">运行中</div>
-                                </div>
-                                <div class="service-info">
-                                    <div class="info-item">
-                                        <span class="info-label">类型:</span>
-                                        <span class="info-value">前端应用</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">端口:</span>
-                                        <span class="info-value">8082 (监听中)</span>
-                                    </div>
-                                </div>
-                                <div class="service-actions">
-                                    <a href="http://localhost:8082" target="_blank" class="btn btn-success">访问应用</a>
-                                    <button onclick="showLogs('code-select')" class="btn btn-primary">查看日志</button>
-                                </div>
-                            </div>
-                            
-                            <div class="service-card">
-                                <div class="service-header">
-                                    <div class="service-name">💰 基金项目前端 (Nuxt)</div>
-                                    <div class="status-badge status-running">运行中</div>
-                                </div>
-                                <div class="service-info">
-                                    <div class="info-item">
-                                        <span class="info-label">类型:</span>
-                                        <span class="info-value">前端应用</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">端口:</span>
-                                        <span class="info-value">3000 (监听中)</span>
-                                    </div>
-                                </div>
-                                <div class="service-actions">
-                                    <a href="http://localhost:3000" target="_blank" class="btn btn-success">访问应用</a>
-                                    <button onclick="showLogs('fund-frontend')" class="btn btn-primary">查看日志</button>
-                                </div>
-                            </div>
-                            
-                            <div class="service-card">
-                                <div class="service-header">
-                                    <div class="service-name">📈 投资决策前端 (Vite)</div>
-                                    <div class="status-badge status-running">运行中</div>
-                                </div>
-                                <div class="service-info">
-                                    <div class="info-item">
-                                        <span class="info-label">类型:</span>
-                                        <span class="info-value">前端应用</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">端口:</span>
-                                        <span class="info-value">5173 (监听中)</span>
-                                    </div>
-                                </div>
-                                <div class="service-actions">
-                                    <a href="http://localhost:5173" target="_blank" class="btn btn-success">访问应用</a>
-                                    <button onclick="showLogs('invest-decision-frontend')" class="btn btn-primary">查看日志</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="services">''' + groups_html + '''
                 </div>
                 
                 <div class="timestamp">
