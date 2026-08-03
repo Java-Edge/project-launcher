@@ -52,6 +52,11 @@ stop_service() {
     echo ""
 }
 
+# 停止 Hermes Dashboard
+echo -e "${BLUE}📦 停止 🤖 Hermes Agent 网关 UI...${NC}"
+/Users/javaedge/.local/bin/hermes dashboard --stop 2>/dev/null && echo -e "${GREEN}✅ Hermes Dashboard 已停止${NC}" || echo -e "${YELLOW}⚠️  Hermes Dashboard 未运行或已停止${NC}"
+echo ""
+
 # 停止管理控制服务
 stop_service "📡 Local Control 服务器管理台" "local-control.*npm"
 

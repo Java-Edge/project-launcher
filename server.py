@@ -37,6 +37,15 @@ SERVICES = {
         "log_file": "frp.log",
         "url": None
     },
+    "hermes-dashboard": {
+        "name": "🤖 Hermes Agent 网关 UI",
+        "type": "management",
+        "group": "hermes",
+        "port": 9119,
+        "status_cmd": "lsof -i :9119 -sTCP:LISTEN",
+        "log_file": "hermes-dashboard.log",
+        "url": "http://127.0.0.1:9119"
+    },
     "local-control": {
         "name": "📡 Local Control 服务器管理台",
         "type": "management",
@@ -108,24 +117,36 @@ SERVICES = {
         "status_cmd": "ps aux | grep invest-decision-frontend.*npm | grep -v grep",
         "log_file": "invest-decision-frontend.log",
         "url": "http://localhost:5173"
+    },
+    "pi-coding-agent": {
+        "name": "🥧 Pi 编码代理 (TUI)",
+        "type": "tool",
+        "group": "tools",
+        "port": None,
+        "status_cmd": "ps aux | grep -v grep | grep ' pi$'",
+        "log_file": "pi.log",
+        "url": None
     }
 }
 
 # 业务分组展示顺序及标题；chain=True 表示该组是前后端配对的完整业务链路，需展示链路健康度
-GROUP_ORDER = ["infra", "local-control", "education", "fund", "invest-decision", "java-interview"]
+GROUP_ORDER = ["infra", "hermes", "local-control", "tools", "education", "fund", "invest-decision", "java-interview"]
 GROUP_META = {
     "infra": {"title": "🏗️ 基础设施服务", "chain": False},
+    "hermes": {"title": "🤖 Hermes Agent 平台", "chain": False},
     "local-control": {"title": "🧭 本地服务管理台", "chain": False},
     "education": {"title": "🎓 Education Platform（后端 + Code Select 前端）", "chain": True},
     "fund": {"title": "💰 基金项目（Flask 后端 + Nuxt 前端）", "chain": True},
     "invest-decision": {"title": "📊 投资决策（后端 + Vite 前端）", "chain": True},
     "java-interview": {"title": "📚 Java 面试教程", "chain": False},
+    "tools": {"title": "🛠️ 开发工具", "chain": False},
 }
 TYPE_LABELS = {
     "infrastructure": "基础设施",
     "management": "管理服务",
     "backend": "后端服务",
     "frontend": "前端应用",
+    "tool": "开发工具",
 }
 
 class ServiceManager:
