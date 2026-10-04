@@ -1,187 +1,110 @@
 #!/usr/bin/env python3
+"""
+本地服务管控台
 
-import os
+架构：
+- config/services.json 服务的单一事实源（面板、start-all/stop-all/status 脚本共用）
+- static/ + templates/ 前端静态文件，改样式无需重启本进程
+- /status 并行检查所有服务状态并缓存，多浏览器轮询共享结果
+"""
+
 import json
+import os
 import subprocess
-import time
-from datetime import datetime
-from pathlib import Path
-from http.server import HTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs
-import signal
 import sys
+import threading
+import time
+import signal
+from concurrent.futures import ThreadPoolExecutor
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
+from pathlib import Path
+from urllib.parse import urlparse, parse_qs
 
-# 项目根目录
 PROJECT_ROOT = Path(__file__).parent
-LOGS_DIR = PROJECT_ROOT / "logs"
+CONFIG_FILE = PROJECT_ROOT / "config" / "services.json"
+STATIC_DIR = PROJECT_ROOT / "static"
+TEMPLATES_DIR = PROJECT_ROOT / "templates"
 SCRIPTS_DIR = PROJECT_ROOT / "scripts"
+LOGS_DIR = PROJECT_ROOT / "logs"
 
-# 服务配置
-# group: 业务系统分组标识，用于按架构层级（而非单纯的前端/后端类型）展示服务
-SERVICES = {
-    "redis": {
-        "name": "🔴 Redis 缓存服务",
-        "type": "infrastructure",
-        "group": "infra",
-        "port": 6379,
-        "status_cmd": "brew services list | grep redis | grep started",
-        "log_file": "redis.log",
-        "url": None
-    },
-    "frp": {
-        "name": "🌐 FRP 内网穿透服务",
-        "type": "infrastructure", 
-        "group": "infra",
-        "port": None,
-        "status_cmd": "ps aux | grep frpc | grep -v grep",
-        "log_file": "frp.log",
-        "url": None
-    },
-    "hermes-dashboard": {
-        "name": "🤖 Hermes Agent 网关 UI",
-        "type": "management",
-        "group": "hermes",
-        "port": 9119,
-        "status_cmd": "lsof -i :9119 -sTCP:LISTEN",
-        "log_file": "hermes-dashboard.log",
-        "url": "http://127.0.0.1:9119"
-    },
-    "local-control": {
-        "name": "📡 Local Control 服务器管理台",
-        "type": "management",
-        "group": "local-control",
-        "port": 3457,
-        "status_cmd": "ps aux | grep local-control.*npm | grep -v grep",
-        "log_file": "local-control.log",
-        "url": "http://localhost:3457"
-    },
-    "education-backend": {
-        "name": "☕ Education Platform 后端",
-        "type": "backend",
-        "group": "education",
-        "port": None,
-        "status_cmd": "ps aux | grep back-0.0.1-SNAPSHOT.jar | grep -v grep",
-        "log_file": "education-backend.log",
-        "url": None
-    },
-    "fund-backend": {
-        "name": "🐍 基金后端服务 (Flask)",
-        "type": "backend",
-        "group": "fund",
-        "port": 8311,
-        "status_cmd": "ps aux | grep flask.*fund_server | grep -v grep",
-        "log_file": "fund-backend.log",
-        "url": "http://localhost:8311"
-    },
-    "invest-decision-backend": {
-        "name": "📊 投资决策后端",
-        "type": "backend", 
-        "group": "invest-decision",
-        "port": None,
-        "status_cmd": "ps aux | grep invest-decision-0.0.1-SNAPSHOT.jar | grep -v grep",
-        "log_file": "invest-decision-backend.log",
-        "url": None
-    },
-    "java-interview": {
-        "name": "📚 Java 面试教程",
-        "type": "frontend",
-        "group": "java-interview",
-        "port": 8081,
-        "status_cmd": "ps aux | grep Java-Interview-Tutorial.*npm | grep -v grep",
-        "log_file": "java-interview.log",
-        "url": "http://localhost:8081"
-    },
-    "code-select": {
-        "name": "🖥️ Code Select 前端",
-        "type": "frontend",
-        "group": "education",
-        "port": 8082,
-        "status_cmd": "ps aux | grep code-select-front.*npm | grep -v grep",
-        "log_file": "code-select.log",
-        "url": "http://localhost:8082"
-    },
-    "fund-frontend": {
-        "name": "💰 基金项目前端 (Nuxt)",
-        "type": "frontend",
-        "group": "fund",
-        "port": 3000,
-        "status_cmd": "ps aux | grep jijin.*npm | grep -v grep",
-        "log_file": "fund-frontend.log",
-        "url": "http://localhost:3000"
-    },
-    "invest-decision-frontend": {
-        "name": "📈 投资决策前端 (Vite)",
-        "type": "frontend",
-        "group": "invest-decision",
-        "port": 5173,
-        "status_cmd": "ps aux | grep invest-decision-frontend.*npm | grep -v grep",
-        "log_file": "invest-decision-frontend.log",
-        "url": "http://localhost:5173"
-    },
-    "pi-coding-agent": {
-        "name": "🥧 Pi 编码代理 (TUI)",
-        "type": "tool",
-        "group": "tools",
-        "port": None,
-        "status_cmd": "ps aux | grep -v grep | grep ' pi$'",
-        "log_file": "pi.log",
-        "url": None
-    }
-}
+STATUS_TTL_SECONDS = 5          # /status 结果缓存，多客户端轮询共享
+STATUS_CHECK_WORKERS = 8        # 并行执行 status_cmd 的子进程数
+LOG_TAIL_BYTES = 64 * 1024      # 读日志只取文件尾部，避免大文件全量读
 
-# 业务分组展示顺序及标题；chain=True 表示该组是前后端配对的完整业务链路，需展示链路健康度
-GROUP_ORDER = ["infra", "hermes", "local-control", "tools", "education", "fund", "invest-decision", "java-interview"]
-GROUP_META = {
-    "infra": {"title": "🏗️ 基础设施服务", "chain": False},
-    "hermes": {"title": "🤖 Hermes Agent 平台", "chain": False},
-    "local-control": {"title": "🧭 本地服务管理台", "chain": False},
-    "education": {"title": "🎓 Education Platform（后端 + Code Select 前端）", "chain": True},
-    "fund": {"title": "💰 基金项目（Flask 后端 + Nuxt 前端）", "chain": True},
-    "invest-decision": {"title": "📊 投资决策（后端 + Vite 前端）", "chain": True},
-    "java-interview": {"title": "📚 Java 面试教程", "chain": False},
-    "tools": {"title": "🛠️ 开发工具", "chain": False},
-}
-TYPE_LABELS = {
-    "infrastructure": "基础设施",
-    "management": "管理服务",
-    "backend": "后端服务",
-    "frontend": "前端应用",
-    "tool": "开发工具",
-}
+
+class ConfigStore:
+    """加载 services.json，文件变更后自动重载（改配置无需重启面板）"""
+
+    def __init__(self, path):
+        self.path = path
+        self._data = None
+        self._mtime = None
+        self._lock = threading.Lock()
+
+    def load(self):
+        with self._lock:
+            mtime = self.path.stat().st_mtime
+            if self._data is None or mtime != self._mtime:
+                self._data = json.loads(self.path.read_text(encoding="utf-8"))
+                self._mtime = mtime
+            return self._data
+
+    def services(self):
+        return self.load()["services"]
+
+    def service(self, service_id):
+        for svc in self.services():
+            if svc["id"] == service_id:
+                return svc
+        return None
+
+
+CONFIG = ConfigStore(CONFIG_FILE)
+
+
+def substitute_placeholders(text, service):
+    """展开启动命令中的路径占位符"""
+    return (text
+            .replace("{project_root}", str(PROJECT_ROOT))
+            .replace("{logs_dir}", str(LOGS_DIR))
+            .replace("{log_file}", str(LOGS_DIR / service.get("log_file", "service.log"))))
+
+
+def port_listening(port):
+    if not port:
+        return False
+    result = subprocess.run(
+        f"lsof -i :{port} -sTCP:LISTEN", shell=True, capture_output=True
+    )
+    return result.returncode == 0
+
 
 class ServiceManager:
     def __init__(self):
-        self.services = SERVICES
-        
-    def check_service_status(self, service_id):
-        """检查服务状态"""
-        service = self.services[service_id]
+        self._status_cache = None
+        self._status_ts = 0.0
+        self._lock = threading.Lock()
+
+    def check_service(self, service):
+        """检查单个服务：status_cmd 判定进程，port 监听作为兜底"""
         try:
             result = subprocess.run(
-                service["status_cmd"], 
-                shell=True, 
-                capture_output=True, 
-                text=True
+                service["status_cmd"], shell=True, capture_output=True, text=True
             )
-            is_running = result.returncode == 0
-            
-            port_listening = None
+            running = result.returncode == 0
+
+            listening = None
             if service.get("port"):
-                result = subprocess.run(
-                    f"lsof -i :{service['port']}",
-                    shell=True,
-                    capture_output=True
-                )
-                port_listening = result.returncode == 0
+                listening = port_listening(service["port"])
                 # ps grep patterns are brittle (e.g. dev servers spawned without "npm"
                 # in their command line), so trust an actual listening port as well
-                is_running = is_running or port_listening
-                
+                running = running or listening
+
             return {
-                "running": is_running,
-                "port_listening": port_listening,
+                "running": running,
+                "port_listening": listening,
                 "port": service.get("port"),
-                "type": service.get("type")
+                "type": service.get("type"),
             }
         except Exception as e:
             return {
@@ -189,704 +112,274 @@ class ServiceManager:
                 "port_listening": False,
                 "port": service.get("port"),
                 "type": service.get("type"),
-                "error": str(e)
+                "error": str(e),
             }
-            
-    def get_log_content(self, service_id, lines=50):
-        """获取日志内容"""
-        service = self.services[service_id]
+
+    def get_all_status(self):
+        with self._lock:
+            if self._status_cache and time.time() - self._status_ts < STATUS_TTL_SECONDS:
+                return self._status_cache
+            services = CONFIG.services()
+            with ThreadPoolExecutor(max_workers=STATUS_CHECK_WORKERS) as pool:
+                results = pool.map(self.check_service, services)
+            status = {svc["id"]: result for svc, result in zip(services, results)}
+            self._status_cache = status
+            self._status_ts = time.time()
+            return status
+
+    def get_log_content(self, service_id, lines=100):
+        service = CONFIG.service(service_id)
+        if not service:
+            return "❌ 服务不存在"
         log_file = LOGS_DIR / service["log_file"]
-        
         if not log_file.exists():
             return "📄 日志文件不存在"
-            
         try:
-            with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+            with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
+                f.seek(0, os.SEEK_END)
+                size = f.tell()
+                f.seek(max(0, size - LOG_TAIL_BYTES))
                 content = f.read()
-                lines_list = content.strip().split('\n')[-lines:]
-                return '\n'.join(lines_list) if lines_list else "📄 暂无日志内容"
+            line_list = content.strip().split("\n")[-lines:]
+            return "\n".join(line_list) if line_list else "📄 暂无日志内容"
         except Exception as e:
-            return f"❌ 读取日志失败: {str(e)}"
-            
-    def get_all_status(self):
-        """获取所有服务状态"""
-        status = {}
-        for service_id in self.services:
-            status[service_id] = self.check_service_status(service_id)
-        return status
-        
+            return f"❌ 读取日志失败: {e}"
+
+    def start_service(self, service_id):
+        """按 services.json 的 start 配置后台启动服务"""
+        service = CONFIG.service(service_id)
+        if not service:
+            return False, f"服务不存在: {service_id}"
+        start = service.get("start")
+        if not start:
+            return False, f"{service['name']} 没有配置启动命令"
+
+        if service.get("port") and port_listening(service["port"]):
+            return True, f"{service['name']} 已在运行中 (端口 {service['port']})"
+
+        work_dir = substitute_placeholders(start["dir"], service)
+        if not Path(work_dir).is_dir():
+            return False, f"目录不存在: {work_dir}"
+
+        log_file = LOGS_DIR / service["log_file"]
+        LOGS_DIR.mkdir(exist_ok=True)
+        cmd = substitute_placeholders(start["cmd"], service)
+        try:
+            with open(log_file, "a", encoding="utf-8") as out:
+                process = subprocess.Popen(
+                    ["bash", "-c", cmd],
+                    cwd=work_dir,
+                    stdout=out,
+                    stderr=subprocess.STDOUT,
+                    start_new_session=True,
+                )
+        except Exception as e:
+            return False, f"启动失败: {e}"
+        return True, f"{service['name']} 启动中 (PID {process.pid})，日志: logs/{service['log_file']}"
+
+    def stop_service(self, service_id):
+        """停止服务：优先显式 stop 配置，其次按端口，面板自身拒绝停止"""
+        service = CONFIG.service(service_id)
+        if not service:
+            return False, f"服务不存在: {service_id}"
+        if service.get("self"):
+            return False, "面板不能停止自己；如需停止请在终端执行: ./scripts/stop-all.sh --panel"
+
+        name = service["name"]
+        stop = service.get("stop")
+        if stop:
+            if stop["mode"] == "cmd":
+                result = subprocess.run(
+                    ["bash", "-c", substitute_placeholders(stop["value"], service)],
+                    capture_output=True, text=True,
+                )
+                return result.returncode == 0, f"{name} 停止命令已执行" + ("" if result.returncode == 0 else f": {result.stderr.strip()}")
+            if stop["mode"] == "pattern":
+                return self._kill_by_pattern(name, stop["value"])
+
+        if service.get("port"):
+            return self._kill_by_port(name, service["port"])
+        return False, f"{name} 没有配置停止方式"
+
+    def _kill_by_pattern(self, name, pattern):
+        pids = subprocess.run(
+            f"ps aux | grep '{pattern}' | grep -v grep | awk '{{print $2}}'",
+            shell=True, capture_output=True, text=True,
+        ).stdout.split()
+        if not pids:
+            return True, f"{name} 未在运行"
+        for pid in pids:
+            subprocess.run(["kill", pid], capture_output=True)
+        time.sleep(2)
+        for pid in pids:  # 仍存活则强杀
+            subprocess.run(
+                f"kill -0 {pid} 2>/dev/null && kill -9 {pid}", shell=True, capture_output=True
+            )
+        return True, f"{name} 已停止 (PID {', '.join(pids)})"
+
+    def _kill_by_port(self, name, port):
+        if not port_listening(port):
+            return True, f"{name} 未在运行"
+        pids = subprocess.run(
+            f"lsof -ti :{port}", shell=True, capture_output=True, text=True
+        ).stdout.split()
+        for pid in pids:
+            subprocess.run(["kill", pid], capture_output=True)
+        for _ in range(10):  # 最多等 5 秒优雅退出
+            if not port_listening(port):
+                return True, f"{name} 已停止 (端口 {port})"
+            time.sleep(0.5)
+        for pid in pids:
+            subprocess.run(["kill", "-9", pid], capture_output=True)
+        return True, f"{name} 已强制停止 (端口 {port})"
+
     def execute_script(self, script_name):
-        """执行管理脚本"""
         script_path = SCRIPTS_DIR / script_name
         if not script_path.exists():
             return False, f"脚本不存在: {script_name}"
-            
         try:
             result = subprocess.run(
                 ["bash", str(script_path)],
                 cwd=PROJECT_ROOT,
                 capture_output=True,
-                text=True
+                text=True,
             )
             return result.returncode == 0, result.stdout + result.stderr
         except Exception as e:
             return False, str(e)
 
+
+MANAGER = ServiceManager()
+
+CONTENT_TYPES = {".css": "text/css", ".js": "application/javascript", ".html": "text/html; charset=utf-8"}
+
+
 class WebHandler(BaseHTTPRequestHandler):
-    def __init__(self, *args, **kwargs):
-        self.service_manager = ServiceManager()
-        super().__init__(*args, **kwargs)
-        
+    def log_message(self, format, *args):
+        pass  # 轮询请求频繁，静默访问日志
+
     def do_GET(self):
-        parsed_path = urlparse(self.path)
-        
-        if parsed_path.path == "/":
-            self.send_main_page()
-        elif parsed_path.path == "/status":
-            self.send_status_json()
-        elif parsed_path.path == "/logs":
-            self.send_logs_json()
-        elif parsed_path.path.startswith("/static/"):
-            self.send_static_file(parsed_path.path[8:])
+        path = urlparse(self.path).path
+        if path == "/":
+            self._send_file(TEMPLATES_DIR / "index.html")
+        elif path == "/api/config":
+            self._send_json(self._api_config())
+        elif path == "/status":
+            self._send_json(MANAGER.get_all_status())
+        elif path == "/logs":
+            self._send_logs()
+        elif path.startswith("/static/"):
+            # basename 防路径穿越
+            self._send_file(STATIC_DIR / os.path.basename(path[len("/static/"):]))
         else:
-            self.send_404()
-            
+            self._send_404()
+
     def do_POST(self):
-        parsed_path = urlparse(self.path)
-        
-        if parsed_path.path == "/execute":
-            self.execute_script()
+        path = urlparse(self.path).path
+        if path in ("/execute", "/start", "/stop"):
+            self._handle_action(path)
         else:
-            self.send_404()
-            
-    def send_json(self, data, status=200):
+            self._send_404()
+
+    def _api_config(self):
+        cfg = CONFIG.load()
+        services = []
+        for svc in cfg["services"]:
+            services.append({
+                "id": svc["id"],
+                "name": svc["name"],
+                "type": svc["type"],
+                "group": svc["group"],
+                "port": svc.get("port"),
+                "url": svc.get("url"),
+                "can_start": bool(svc.get("start") or svc.get("terminal_script")),
+                "can_stop": (bool(svc.get("stop")) or bool(svc.get("port"))) and not svc.get("self"),
+                "terminal_script": svc.get("terminal_script"),
+            })
+        return {
+            "groups": cfg["groups"],
+            "type_labels": cfg["type_labels"],
+            "services": services,
+        }
+
+    def _handle_action(self, path):
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            data = json.loads(self.rfile.read(length).decode("utf-8"))
+        except Exception:
+            self._send_json({"success": False, "message": "请求体不是合法 JSON"}, 400)
+            return
+
+        if path == "/execute":
+            script = data.get("script", "")
+            if not script:
+                self._send_json({"success": False, "message": "未指定脚本"})
+                return
+            ok, message = MANAGER.execute_script(script)
+        elif path == "/start":
+            ok, message = MANAGER.start_service(data.get("service", ""))
+        else:
+            ok, message = MANAGER.stop_service(data.get("service", ""))
+
+        self._send_json({"success": ok, "message": message})
+
+    def _send_logs(self):
+        params = parse_qs(urlparse(self.path).query)
+        service_id = params.get("service", [""])[0]
+        service = CONFIG.service(service_id)
+        if not service:
+            self._send_json({"error": "服务不存在"})
+            return
+        self._send_json({
+            "log_content": MANAGER.get_log_content(service_id),
+            "service_name": service["name"],
+        })
+
+    def _send_json(self, data, status=200):
         self.send_response(status)
-        self.send_header('Content-Type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(json.dumps(data, ensure_ascii=False).encode())
-        
-    def send_html(self, html, status=200):
-        self.send_response(status)
-        self.send_header('Content-Type', 'text/html; charset=utf-8')
+
+    def _send_file(self, file_path):
+        if not file_path.is_file():
+            self._send_404()
+            return
+        content_type = CONTENT_TYPES.get(file_path.suffix, "application/octet-stream")
+        content = file_path.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(content)))
         self.end_headers()
-        self.wfile.write(html.encode('utf-8'))
-        
-    def send_static_file(self, filename):
-        """发送静态文件"""
-        static_files = {
-            'style.css': self.get_css(),
-            'script.js': self.get_js()
-        }
-        
-        if filename in static_files:
-            content_type = 'text/css' if filename.endswith('.css') else 'application/javascript'
-            self.send_response(200)
-            self.send_header('Content-Type', content_type)
-            self.end_headers()
-            self.wfile.write(static_files[filename].encode('utf-8'))
-        else:
-            self.send_404()
-            
-    def send_status_json(self):
-        status = self.service_manager.get_all_status()
-        self.send_json(status)
-        
-    def send_logs_json(self):
-        params = parse_qs(urlparse(self.path).query)
-        service_id = params.get('service', [''])[0]
-        
-        if service_id in self.service_manager.services:
-            log_content = self.service_manager.get_log_content(service_id)
-            self.send_json({
-                'log_content': log_content,
-                'service_name': self.service_manager.services[service_id]['name']
-            })
-        else:
-            self.send_json({'error': '服务不存在'})
-            
-    def execute_script(self):
-        content_length = int(self.headers['Content-Length'])
-        post_data = self.rfile.read(content_length)
-        data = json.loads(post_data.decode('utf-8'))
-        script_name = data.get('script', '')
-        
-        if script_name:
-            success, message = self.service_manager.execute_script(script_name)
-            self.send_json({
-                'success': success,
-                'message': message
-            })
-        else:
-            self.send_json({'success': False, 'message': '未指定脚本'})
-            
-    def render_service_card(self, service_id, service, status):
-        """渲染单个服务卡片"""
-        running = status.get("running", False)
-        card_class = "running" if running else "stopped"
-        badge_class = "status-running" if running else "status-stopped"
-        badge_text = "运行中" if running else "未运行"
-        
-        port_info = ""
-        if service.get("port"):
-            listening_text = "监听中" if status.get("port_listening") else "未监听"
-            port_info = f'''
-                                    <div class="info-item">
-                                        <span class="info-label">端口:</span>
-                                        <span class="info-value" id="port-value-{service_id}">{service["port"]} ({listening_text})</span>
-                                    </div>'''
-        
-        visit_btn = ""
-        if service.get("url"):
-            display = "inline-block" if running else "none"
-            visit_btn = f'<a href="{service["url"]}" target="_blank" class="btn btn-success" id="visit-{service_id}" style="display:{display}">访问应用</a>\n                                    '
-        
-        return f'''
-                            <div class="service-card {card_class}" id="card-{service_id}">
-                                <div class="service-header">
-                                    <div class="service-name">{service["name"]}</div>
-                                    <div class="status-badge {badge_class}" id="badge-{service_id}">{badge_text}</div>
-                                </div>
-                                <div class="service-info">
-                                    <div class="info-item">
-                                        <span class="info-label">类型:</span>
-                                        <span class="info-value">{TYPE_LABELS.get(service["type"], service["type"])}</span>
-                                    </div>{port_info}
-                                </div>
-                                <div class="service-actions" id="actions-{service_id}">
-                                    {visit_btn}<button onclick="showLogs('{service_id}')" class="btn btn-primary">查看日志</button>
-                                </div>
-                            </div>'''
-    
-    def render_group(self, group_id, status_map):
-        """按业务系统分组渲染，chain 分组会附带全链路健康度徽标"""
-        meta = GROUP_META[group_id]
-        service_ids = [sid for sid, svc in self.service_manager.services.items() if svc.get("group") == group_id]
-        
-        chain_html = ""
-        if meta["chain"]:
-            running_count = sum(1 for sid in service_ids if status_map[sid]["running"])
-            total = len(service_ids)
-            if running_count == total:
-                chain_class, chain_text = "chain-ok", "🟢 全链路正常"
-            elif running_count == 0:
-                chain_class, chain_text = "chain-down", "🔴 全部离线"
-            else:
-                chain_class, chain_text = "chain-warn", "🟡 部分异常"
-            chain_html = f'<div class="chain-badge {chain_class}" id="chain-{group_id}">{chain_text}</div>'
-        
-        cards_html = "\n".join(
-            self.render_service_card(sid, self.service_manager.services[sid], status_map[sid])
-            for sid in service_ids
-        )
-        
-        return f'''
-                    <div class="service-group">
-                        <div class="group-title"><span>{meta["title"]}</span>{chain_html}</div>
-                        <div class="service-grid">{cards_html}
-                        </div>
-                    </div>'''
-            
-    def send_404(self):
+        self.wfile.write(content)
+
+    def _send_404(self):
         self.send_response(404)
-        self.send_header('Content-Type', 'text/plain')
+        self.send_header("Content-Type", "text/plain")
         self.end_headers()
-        self.wfile.write(b'404 Not Found')
-        
-    def get_css(self):
-        return '''
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-        
-        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
-        
-        .header p { opacity: 0.9; font-size: 1.1em; }
-        
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            padding: 30px;
-            background: #f8f9fa;
-        }
-        
-        .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        .stat-number {
-            font-size: 2em;
-            font-weight: bold;
-            color: #667eea;
-        }
-        
-        .stat-label {
-            color: #666;
-            margin-top: 5px;
-        }
-        
-        .controls {
-            padding: 30px;
-            background: white;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            margin-right: 10px;
-            margin-bottom: 10px;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-primary { background: #667eea; color: white; }
-        .btn-danger { background: #ff6b6b; color: white; }
-        .btn-success { background: #51cf66; color: white; }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); }
-        
-        .services { padding: 30px; }
-        
-        .service-group { margin-bottom: 30px; }
-        
-        .group-title {
-            font-size: 1.3em;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: #333;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #667eea;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .chain-badge {
-            font-size: 0.6em;
-            font-weight: bold;
-            padding: 5px 14px;
-            border-radius: 20px;
-            white-space: nowrap;
-        }
-        
-        .chain-ok { background: #d4edda; color: #155724; }
-        .chain-warn { background: #fff3cd; color: #856404; }
-        .chain-down { background: #f8d7da; color: #721c24; }
-        
-        .service-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 20px;
-        }
-        
-        .service-card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            border-left: 4px solid #ccc;
-        }
-        
-        .service-card.running { border-left-color: #51cf66; }
-        .service-card.stopped { border-left-color: #ff6b6b; }
-        
-        .service-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .service-name {
-            font-size: 1.1em;
-            font-weight: bold;
-            color: #333;
-        }
-        
-        .status-badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
-        
-        .status-running { background: #d4edda; color: #155724; }
-        .status-stopped { background: #f8d7da; color: #721c24; }
-        
-        .service-info { margin-bottom: 15px; }
-        
-        .info-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-            font-size: 0.9em;
-        }
-        
-        .info-label { color: #666; }
-        .info-value { font-weight: 500; }
-        
-        .service-actions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        
-        .service-actions .btn {
-            padding: 8px 16px;
-            font-size: 0.8em;
-            margin: 0;
-        }
-        
-        .log-container {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
-            padding: 15px;
-            height: 400px;
-            overflow-y: auto;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            font-size: 0.8em;
-            line-height: 1.4;
-            margin-top: 15px;
-            white-space: pre-wrap;
-        }
-        
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-        }
-        
-        .modal-content {
-            background: white;
-            margin: 50px auto;
-            padding: 30px;
-            border-radius: 10px;
-            max-width: 900px;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-        
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .close-btn {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: #999;
-        }
-        
-        .refresh-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-            color: #667eea;
-        }
-        
-        .timestamp {
-            text-align: center;
-            padding: 20px;
-            color: #666;
-            font-size: 0.9em;
-        }
-        '''
-        
-    def get_js(self):
-        group_services = {
-            gid: [sid for sid, svc in self.service_manager.services.items() if svc.get("group") == gid]
-            for gid in GROUP_ORDER
-        }
-        return '''
-        const GROUP_SERVICES = ''' + json.dumps(group_services, ensure_ascii=False) + ''';
-        let currentService = null;
-        let refreshInterval = null;
-        
-        function updateDashboard() {
-            fetch('/status')
-                .then(response => response.json())
-                .then(data => {
-                    updateStats(data);
-                })
-                .catch(error => console.error('更新失败:', error));
-        }
-        
-        function updateStats(data) {
-            const running = Object.values(data).filter(s => s.running).length;
-            const total = Object.keys(data).length;
-            const frontend = Object.values(data).filter(s => s.type === 'frontend' && s.running).length;
-            const backend = Object.values(data).filter(s => s.type === 'backend' && s.running).length;
-            
-            document.getElementById('running-count').textContent = running;
-            document.getElementById('total-count').textContent = total;
-            document.getElementById('frontend-count').textContent = frontend;
-            document.getElementById('backend-count').textContent = backend;
-            
-            updateServiceCards(data);
-            updateChainBadges(data);
-            
-            document.getElementById('last-update').textContent = new Date().toLocaleString();
-        }
-        
-        function updateServiceCards(data) {
-            for (const [serviceId, status] of Object.entries(data)) {
-                const card = document.getElementById(`card-${serviceId}`);
-                const badge = document.getElementById(`badge-${serviceId}`);
-                if (!card || !badge) continue;
-                
-                card.classList.toggle('running', status.running);
-                card.classList.toggle('stopped', !status.running);
-                badge.classList.toggle('status-running', status.running);
-                badge.classList.toggle('status-stopped', !status.running);
-                badge.textContent = status.running ? '运行中' : '未运行';
-                
-                const visitBtn = document.getElementById(`visit-${serviceId}`);
-                if (visitBtn) visitBtn.style.display = status.running ? 'inline-block' : 'none';
-                
-                const portValue = document.getElementById(`port-value-${serviceId}`);
-                if (portValue && status.port) {
-                    portValue.textContent = `${status.port} (${status.port_listening ? '监听中' : '未监听'})`;
-                }
-            }
-        }
-        
-        function updateChainBadges(data) {
-            for (const [groupId, serviceIds] of Object.entries(GROUP_SERVICES)) {
-                const chainEl = document.getElementById(`chain-${groupId}`);
-                if (!chainEl) continue;
-                
-                const runningCount = serviceIds.filter(id => data[id] && data[id].running).length;
-                chainEl.classList.remove('chain-ok', 'chain-warn', 'chain-down');
-                
-                if (runningCount === serviceIds.length) {
-                    chainEl.textContent = '🟢 全链路正常';
-                    chainEl.classList.add('chain-ok');
-                } else if (runningCount === 0) {
-                    chainEl.textContent = '🔴 全部离线';
-                    chainEl.classList.add('chain-down');
-                } else {
-                    chainEl.textContent = '🟡 部分异常';
-                    chainEl.classList.add('chain-warn');
-                }
-            }
-        }
-        
-        function showLogs(serviceId) {
-            currentService = serviceId;
-            refreshLogs();
-            document.getElementById('logModal').style.display = 'block';
-        }
-        
-        function closeModal() {
-            document.getElementById('logModal').style.display = 'none';
-            if (refreshInterval) {
-                clearInterval(refreshInterval);
-                refreshInterval = null;
-            }
-        }
-        
-        function refreshLogs() {
-            if (!currentService) return;
-            
-            fetch(`/logs?service=${currentService}`)
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('logContent').textContent = data.log_content;
-                    document.getElementById('serviceTitle').textContent = data.service_name;
-                    
-                    const logContainer = document.getElementById('logContent');
-                    logContainer.scrollTop = logContainer.scrollHeight;
-                })
-                .catch(error => console.error('获取日志失败:', error));
-        }
-        
-        function executeScript(scriptName) {
-            if (!confirm(`确定要执行 ${scriptName} 吗？`)) return;
-            
-            fetch('/execute', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ script: scriptName })
-            })
-            .then(response => response.json())
-            .then(data => {
-                alert(data.message);
-                if (data.success) {
-                    updateDashboard();
-                }
-            })
-            .catch(error => alert('执行失败: ' + error));
-        }
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            updateDashboard();
-            setInterval(updateDashboard, 30000);
-            
-            window.onclick = function(event) {
-                const modal = document.getElementById('logModal');
-                if (event.target === modal) {
-                    closeModal();
-                }
-            }
-        });
-        '''
-        
-    def send_main_page(self):
-        status_map = self.service_manager.get_all_status()
-        groups_html = "\n".join(self.render_group(gid, status_map) for gid in GROUP_ORDER)
-        
-        running_count = sum(1 for s in status_map.values() if s["running"])
-        total_count = len(status_map)
-        frontend_count = sum(
-            1 for sid, s in status_map.items()
-            if self.service_manager.services[sid]["type"] == "frontend" and s["running"]
-        )
-        backend_count = sum(
-            1 for sid, s in status_map.items()
-            if self.service_manager.services[sid]["type"] == "backend" and s["running"]
-        )
-        
-        html = '''
-        <!DOCTYPE html>
-        <html lang="zh-CN">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>🚀 本地项目启动管理器</title>
-            <link rel="stylesheet" href="/static/style.css">
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>🚀 本地项目启动管理器</h1>
-                    <p>统一管理您的所有本地开发服务</p>
-                </div>
-                
-                <div class="stats">
-                    <div class="stat-card">
-                        <div class="stat-number" id="running-count">''' + str(running_count) + '''</div>
-                        <div class="stat-label">运行中</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="total-count">''' + str(total_count) + '''</div>
-                        <div class="stat-label">总服务数</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="frontend-count">''' + str(frontend_count) + '''</div>
-                        <div class="stat-label">前端应用</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="backend-count">''' + str(backend_count) + '''</div>
-                        <div class="stat-label">后端服务</div>
-                    </div>
-                </div>
-                
-                <div class="controls">
-                    <button onclick="executeScript('start-all.sh')" class="btn btn-success">🚀 启动所有服务</button>
-                    <button onclick="executeScript('stop-all.sh')" class="btn btn-danger">🛑 停止所有服务</button>
-                    <button onclick="updateDashboard()" class="btn btn-primary">🔄 刷新状态</button>
-                </div>
-                
-                <div class="services">''' + groups_html + '''
-                </div>
-                
-                <div class="timestamp">
-                    最后更新: <span id="last-update">加载中...</span>
-                </div>
-            </div>
-            
-            <!-- 日志模态框 -->
-            <div id="logModal" class="modal">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h2 id="serviceTitle">服务日志</h2>
-                        <div>
-                            <button onclick="refreshLogs()" class="refresh-btn">🔄</button>
-                            <button onclick="closeModal()" class="close-btn">&times;</button>
-                        </div>
-                    </div>
-                    <div class="log-container">
-                        <pre id="logContent">选择一个服务来查看日志...</pre>
-                    </div>
-                </div>
-            </div>
-            
-            <script src="/static/script.js"></script>
-        </body>
-        </html>
-        '''
-        
-        self.send_html(html)
+        self.wfile.write(b"404 Not Found")
+
 
 def run_server(port=8090):
-    """启动Web服务器"""
     try:
-        server = HTTPServer(('localhost', port), WebHandler)
+        server = ThreadingHTTPServer(("localhost", port), WebHandler)
         print(f"🚀 Web管理界面启动在 http://localhost:{port}")
-        print(f"📊 管理界面包含以下功能:")
-        print(f"   🔍 实时查看服务状态")
-        print(f"   📝 查看服务日志")
-        print(f"   🌐 快速跳转到应用页面")
-        print(f"   🚀 一键启动/停止服务")
-        print(f"")
-        print(f"💡 提示: 按 Ctrl+C 停止服务器")
-        
+        print(f"📋 服务清单: {CONFIG_FILE}")
+        print(f"💡 提示: 按 Ctrl+C 停止服务器；改 services.json / static / 模板后刷新页面即生效")
+
         def signal_handler(sig, frame):
             print("\n🛑 服务器正在停止...")
             server.shutdown()
             sys.exit(0)
-            
+
         signal.signal(signal.SIGINT, signal_handler)
         server.serve_forever()
-        
     except Exception as e:
         print(f"❌ 服务器启动失败: {e}")
         sys.exit(1)
 
+
 if __name__ == "__main__":
-    import sys
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8090
     run_server(port)

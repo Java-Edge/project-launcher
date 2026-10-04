@@ -149,7 +149,31 @@ redis-cli ping  # 返回 PONG 表示正常运行
 
 **状态**: ✅ 运行中
 
-### 6. ☕ Education Platform 后端服务 (Spring Boot)
+### 6. 🗄️ MongoDB 数据库
+
+**程序路径**: `/Volumes/mobileData/data/soft/mongodb-macos-aarch64-8.0.11/bin/mongod`
+
+**数据目录**: `~/mongodb-data`
+
+**启动命令**:
+```bash
+./scripts/start-service.sh mongodb
+```
+
+**技术栈**: MongoDB 8.0.11
+
+**端口**: 27017
+
+**说明**: MongoDB 数据库服务，运行在外接硬盘上的 MongoDB 二进制文件，数据存储在本地 `~/mongodb-data` 目录。
+
+**连接测试**:
+```bash
+mongosh --port 27017  # 或 mongo --port 27017
+```
+
+**状态**: ✅ 运行中
+
+### 7. ☕ Education Platform 后端服务 (Spring Boot)
 
 **项目路径**: `/Users/javaedge/soft/IDEAProjects/education-platform/education-back/target`
 
@@ -275,6 +299,81 @@ npm run dev
 
 **状态**: ✅ 运行中
 
+### 10. 🤖 Grok Build (xAI CLI)
+
+**安装路径**: `/Users/javaedge/.local/bin/grok`
+
+**启动命令**:
+```bash
+./scripts/start-grok.sh
+```
+
+**技术栈**: xAI Grok CLI
+
+**说明**: xAI 官方推出的编码命令行工具 Grok Build，支持代码阅读、修改、运行测试等功能。首次启动需要浏览器授权 xAI 账号。
+
+**常用命令**:
+- `grok` - 启动交互式会话
+- `grok "fix the bug"` - 带初始提示启动
+- `grok -c` - 继续上一次的会话
+- `/help` - 查看可用命令
+- `/exit` - 退出会话
+
+**状态**: ✅ 已安装
+
+### 11. 🌐 OpenClaw WebUI
+
+**安装路径**: `/opt/homebrew/lib/node_modules/openclaw`
+
+**启动命令**:
+```bash
+./scripts/start-service.sh openclaw
+```
+
+**技术栈**: Node.js (OpenClaw)
+
+**端口**: 18789
+
+**访问地址**: http://127.0.0.1:18789/chat/main
+
+**说明**: OpenClaw 是一个 AI 网关 Web 管理界面，提供聊天、模型管理等功能。通过 Homebrew 安装的 Node.js 运行。
+
+**常用命令**:
+- `openclaw` - 查看帮助
+- `openclaw --version` - 查看版本
+
+**状态**: ✅ 运行中
+
+### 12. 🤖 Muse Code + LM Studio
+
+**Muse 路径**: `~/.local/bin/muse`
+
+**代理端口**: 18888 → LM Studio 1234
+
+**启动命令**:
+```bash
+./scripts/start-muse.sh
+```
+
+**技术栈**: Meta Muse Code CLI + LM Studio
+
+**说明**: Muse Code 是 Meta 官方的 AI 编码代理，通过本地代理连接到 LM Studio 运行的 qwen3.8-27b-mlx 模型。
+
+**配置信息**:
+- 默认模型: qwen3.8-27b-mlx
+- 代理地址: http://127.0.0.1:18888
+- LM Studio: http://127.0.0.1:1234
+- 认证 Key: lmstudio
+
+**使用方式**:
+```bash
+~/.local/bin/muse                          # 交互式 TUI（需要终端）
+~/.local/bin/muse exec "你的问题"          # 单次执行
+~/.local/bin/muse --base-url http://127.0.0.1:18888/v1 exec "问题"
+```
+
+**状态**: ✅ 已安装并配置
+
 ✅ **项目记录完成！**
 
 现在我已经为您创建了完整的项目启动管理系统！🎉
@@ -319,7 +418,7 @@ tail -f logs/*.log
 
 ## 📊 项目统计
 
-📦 **总计 9 个项目**
+📦 **总计 14 个项目**
 
 🖥️ **前端项目 (4个)**:
 - VuePress 文档 (8081)
@@ -332,9 +431,49 @@ tail -f logs/*.log
 - Flask (基金后端，8311)
 - Spring Boot (投资决策)
 
-🗄️ **基础设施 (2个)**:
+🗄️ **基础设施 (3个)**:
 - Redis 缓存 (6379)
+- MongoDB (27017)
 - FRP 内网穿透
+
+🤖 **开发工具 (2个)**:
+- Grok Build (xAI CLI)
+- MiMo Code (小米 AI 编码代理)
+
+🌐 **AI 网关 (1个)**:
+- OpenClaw WebUI (18789)
+
+🤖 **AI 编码代理 (1个)**:
+- Muse Code + LM Studio (代理端口 18888)
+
+### 14. 🤖 MiMo Code (小米 AI 编码代理)
+
+**安装路径**: `~/.mimocode/bin/mimo`
+
+**启动命令**:
+```bash
+./scripts/start-mimo.sh
+```
+
+**技术栈**: 小米 MiMo Code CLI
+
+**说明**: 小米开源的 AI 编码代理，提供交互式 TUI 界面，支持代码阅读、修改、运行测试等功能。直接安装即可使用，无需额外配置。
+
+**使用方式**:
+```bash
+cd <项目目录>
+mimo                # 交互式 TUI
+mimo --version      # 查看版本 (0.1.14)
+```
+
+**安装命令** (如需要重新安装):
+```bash
+curl -fsSL https://mimo.xiaomi.com/install | bash
+```
+
+**文档**: https://mimo.xiaomi.com/coder/docs
+
+**状态**: ✅ 已安装
 
 ## 🎯 使用建议
 
@@ -394,19 +533,26 @@ chmod +x web-manager.sh
 ```
 project-launcher/
 ├── README.md                    # 本文件
-├── web-manager.sh              # Web管理界面启动脚本
-├── server.py                   # Web管理界面后端服务
+├── web-manager.sh               # Web管理界面启动脚本
+├── server.py                    # 管控台后端（并行状态检查 + 结果缓存）
+├── config/
+│   └── services.json            # ⭐ 服务的单一事实源（面板与脚本共用）
+├── static/                      # 前端静态文件（改动刷新页面即生效）
+│   ├── style.css
+│   └── script.js
+├── templates/
+│   └── index.html               # 页面骨架
 ├── scripts/
-│   ├── start-all.sh             # 一键启动所有服务
-│   ├── stop-all.sh              # 一键停止所有服务
+│   ├── start-all.sh             # 一键启动（按 autostart_order 顺序）
+│   ├── stop-all.sh              # 一键停止（--panel 连管控台一起停）
 │   ├── status.sh                # 查看服务状态
+│   ├── start-service.sh         # 启动单个服务: ./scripts/start-service.sh <id>
+│   ├── stop-service.sh          # 停止单个服务: ./scripts/stop-service.sh <id>
+│   ├── start-pi.sh 等           # TUI/交互工具脚本（需独立终端）
 │   └── utils/
-│       └── service-control.sh   # 服务控制工具函数
+│       └── service-control.sh   # 共享函数库（读取 services.json）
 ├── logs/                        # 服务日志目录
-│   ├── redis.log
-│   ├── frp.log
-│   ├── fund-frontend.log
-│   └── ...
+├── archive/                     # 历史文档与一次性报告
 └── projects/                    # 项目详情（未来扩展）
 ```
 
@@ -539,7 +685,7 @@ kill -9 <PID>
 
 ### 📖 **文档**
 - [快速入门指南](https://github.com/Java-Edge/project-launcher/blob/main/QUICK_START.md) - 3分钟上手
-- [演示指南](https://github.com/Java-Edge/project-launcher/blob/main/demo.md) - 完整功能演示
+- [演示指南](https://github.com/Java-Edge/project-launcher/blob/main/archive/demo.md) - 完整功能演示
 - [API文档](https://github.com/Java-Edge/project-launcher/wiki/API-Documentation) - Web界面API说明
 
 ### 🎥 **视频教程** (计划中)

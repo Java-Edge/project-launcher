@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 本地项目启动管理器</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="切换主题">🌙</button>
+            <h1>🚀 本地项目启动管理器</h1>
+            <p>统一管理您的所有本地开发服务</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="running-count">0</div>
+                <div class="stat-label">运行中</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="total-count">0</div>
+                <div class="stat-label">总服务数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="frontend-count">0</div>
+                <div class="stat-label">前端应用</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="backend-count">0</div>
+                <div class="stat-label">后端服务</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button onclick="executeScript('start-all.sh')" class="btn btn-success">🚀 启动所有服务</button>
+            <button onclick="executeScript('stop-all.sh')" class="btn btn-danger">🛑 停止所有服务</button>
+            <button onclick="updateDashboard()" class="btn btn-primary">🔄 刷新状态</button>
+        </div>
+
+        <div class="services" id="services">
+            <p style="color: var(--text-secondary); text-align: center;">⏳ 正在加载服务清单...</p>
+        </div>
+
+        <div class="timestamp">
+            最后更新: <span id="last-update">加载中...</span>
+        </div>
+    </div>
+
+    <!-- 日志模态框 -->
+    <div id="logModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="serviceTitle">服务日志</h2>
+                <div>
+                    <button onclick="refreshLogs()" class="refresh-btn">🔄</button>
+                    <button onclick="closeModal()" class="close-btn">&times;</button>
+                </div>
+            </div>
+            <div class="log-container">
+                <pre id="logContent">选择一个服务来查看日志...</pre>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
