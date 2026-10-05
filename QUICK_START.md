@@ -120,7 +120,7 @@ A: Python3 + HTTP Server + HTML/CSS/JavaScript，无需额外依赖
 A: **可以！** 我们的脚本会智能安排启动顺序
 
 ### Q: 如何修改服务配置？
-A: 目前配置文件在 `server.py` 中，后续会提取到独立的配置文件中
+A: 编辑 `config/services.json`——面板和所有脚本共用这一份清单，改完保存即生效（面板自动重载，无需重启）。字段含义见文件内已有条目示例：name/port/url/status_cmd/start(dir+cmd)/stop/分组。
 
 ## 🎪 下一步建议
 

@@ -5,6 +5,36 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且这个项目遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/).
 
+## [Unreleased]
+
+### ✨ 新增：projects/md-publish（MD 多平台同步台）
+- 零依赖纯前端控制台（端口 8095）+ 本地执行桥 `bridge.mjs`（只监听 127.0.0.1:8096）+ 确定性发文脚本 `playbooks/<平台>.js`
+- 页面点「一键同步为草稿 / 一键直接发布」即真执行：桥把 playbook 喂给 ego-browser，全程不经过任何 AI/智能体平台，不限次数
+- 已实测：博客园（草稿 + **直发成功**，回传对外链接）、掘金、CSDN、头条号（草稿）；51CTO 脚本就绪，待 Ego Lite 登录该站后验证
+- 管控台新增服务 `md-publish`（bash start.sh 会连执行桥一起拉起）与 `md-publish-bridge`
+
+## [2.0.0] - 2026-10-05
+
+### 🏗️ 架构重构：单一事实源
+
+#### ✨ 新增
+- **config/services.json**: 服务的单一事实源（24 个服务、8 个分组），管控台与全部脚本共用；改动后面板自动重载
+- **单服务管理**: `./scripts/start-service.sh <id>` / `stop-service.sh <id>`，面板卡片新增"停止"按钮
+- **管控台自管理**: 面板注册为服务（id: panel），start-all 会确保其运行；stop-all 默认不停面板（`--panel` 连面板一起停）
+- **性能**: /status 并行检查 + 5 秒缓存，2.6s → 首次 0.64s / 缓存命中 ~0.001s；HTTP 服务改多线程
+- **前端落盘**: CSS/JS/HTML 移入 static/ 与 templates/，改样式刷新即生效
+- **服务覆盖补齐**: mongodb、openclaw、px0、muse-proxy 等原本只存在于脚本中的服务全部纳入清单
+
+#### 🔧 变更
+- start-all/stop-all/status.sh 改为读取 services.json 的薄壳（222/180/245 行 → 32/23/44 行）
+- server.py 从 1095 行瘦身至 385 行
+- scripts/utils/service-control.sh 重写为真正的共享函数库（JSON→TSV 查询、按端口/进程名/命令三种停止模式）
+- stop-all 不再按 "grok" 关键字误杀交互式会话
+
+#### 🗑️ 移除
+- 7 个被 JSON 配置取代的单服务脚本（start-mongodb、start-px0、start-openclaw、start-test-service、start-python-agent、stop-mongodb、stop-muse）
+- 根目录历史文件归档至 archive/（demo、db_inventory 报告、verify.sh 等）
+
 ## [1.0.0] - 2026-06-22
 
 ### 🎉 首次发布

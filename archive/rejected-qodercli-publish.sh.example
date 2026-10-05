@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# 由「MD 多平台同步台」生成 · 2026/10/5 20:30:31
+# 文章: /tmp/测试文章.md
+# 模式: 存为草稿 · 平台数: 9
+# 用法: bash publish.sh          全部平台
+#       ONLY=juejin,csdn bash publish.sh    只跑指定平台
+set -uo pipefail
+
+PERM='bypass_permissions'
+WORKDIR='/tmp'
+SELFDIR="$(cd "$(dirname "$0")" && pwd)"
+LOGDIR="$SELFDIR/logs/20261005-2030"
+mkdir -p "$LOGDIR"
+ONLY="${ONLY:-}"
+QODER_BIN="${QODER_BIN:-}"
+
+# --- 定位 qodercli ---
+if [ -z "$QODER_BIN" ]; then
+  QODER_BIN=$(ls -d "$HOME"/.qoder/bin/qodercli/qodercli-* 2>/dev/null | sort -V | tail -1)
+fi
+if [ -z "$QODER_BIN" ] || [ ! -x "$QODER_BIN" ]; then QODER_BIN=$(command -v qodercli || true); fi
+if [ -z "$QODER_BIN" ]; then echo "找不到 qodercli，请 export QODER_BIN=/路径/qodercli 后重试"; exit 1; fi
+echo "CLI : $QODER_BIN"
+echo "日志: $LOGDIR"
+
+# --- 文章来源 ---
+ARTICLE='/tmp/测试文章.md'
+if [ ! -f "$ARTICLE" ]; then echo "文章不存在: $ARTICLE"; exit 1; fi
+
+RESULTS=""
+FAILED=""
+run() {
+  key="$1"; label="$2"; prompt="$3"
+  if [ -n "$ONLY" ] && ! echo ",$ONLY," | tr -d " " | grep -q ",$key,"; then echo "⏭  跳过 $label"; return 0; fi
+  echo ""; echo "▶ $label  $(date +%H:%M:%S)"
+  "$QODER_BIN" -p --permission-mode "$PERM" -w "$WORKDIR" -n "publish-$key" "$prompt" >"$LOGDIR/$key.log" 2>&1
+  code=$?
+  if [ "$code" = "0" ]; then echo "✅ $label 完成 → $LOGDIR/$key.log"; else echo "❌ $label 失败(code=$code) → $LOGDIR/$key.log"; FAILED="$FAILED $key"; fi
+  RESULTS="$RESULTS $key:$code"
+  return 0
+}
+
+cd "$WORKDIR" || exit 1
+run 'csdn' 'CSDN' '把「测试文章」同步到CSDN（账号：JavaEdge）。 文章文件：/tmp/测试文章.md。用 csdn-publish 这个 skill 执行，只保存到草稿箱并完成填写校验，绝对不要点最终「发布/提交」按钮。完成后用一行汇报：平台、结果、文章链接或草稿位置。'
+run 'juejin' '掘金' '把「测试文章」同步到掘金（账号：JavaEdge在掘金）。 文章文件：/tmp/测试文章.md。用 juejin-publish 这个 skill 执行，只保存到草稿箱并完成填写校验，绝对不要点最终「发布/提交」按钮。完成后用一行汇报：平台、结果、文章链接或草稿位置。'
+run 'cnblogs' '博客园' '把「测试文章」同步到博客园（账号：公众号-JavaEdge）。 文章文件：/tmp/测试文章.md。用 cnblogs-publish 这个 skill 执行，只保存到草稿箱并完成填写校验，绝对不要点最终「发布/提交」按钮。完成后用一行汇报：平台、结果、文章链接或草稿位置。'
+run '51cto' '51CTO' '把「测试文章」同步到51CTO（账号：JavaEdge）。 文章文件：/tmp/测试文章.md。用 51cto-publish 这个 skill 执行，只保存到草稿箱并完成填写校验，绝对不要点最终「发布/提交」按钮。完成后用一行汇报：平台、结果、文章链接或草稿位置。'
+run 'toutiao' '头条号' '把「测试文章」同步到头条号（账号：JavaEdge聊AI）。 文章文件：/tmp/测试文章.md。用 toutiao-publish 这个 skill 执行，只保存到草稿箱并完成填写校验，绝对不要点最终「发布/提交」按钮。完成后用一行汇报：平台、结果、文章链接或草稿位置。'
+run 'douyin' '抖音图文' '把「测试文章」同步到抖音图文（账号：JavaEdge）。 文章文件：/tmp/测试文章.md。用 douyin-publish 这个 skill 执行，只保存到草稿箱并完成填写校验，绝对不要点最终「发布/提交」按钮。完成后用一行汇报：平台、结果、文章链接或草稿位置。'
+run 'vuepress' '编程严选网' '把「测试文章」同步到编程严选网（账号：本地 VuePress）。 文章文件：/tmp/测试文章.md。用 vuepress-article-publisher 这个 skill 执行，只保存到草稿箱并完成填写校验，绝对不要点最终「发布/提交」按钮。完成后用一行汇报：平台、结果、文章链接或草稿位置。'
+run 'wechat' '微信公众号' '把「测试文章」同步到微信公众号（账号：JavaEdge）。 文章文件：/tmp/测试文章.md。打开 https://mp.weixin.qq.com/cgi-bin/appmsg，复用我 Chrome 里已登录的会话（用 ego-browser 或 bb-browser），新建文章并填入标题、Markdown 正文，只保存到草稿箱并完成填写校验，绝对不要点最终「发布/提交」按钮。完成后用一行汇报：平台、结果、文章链接或草稿位置。若该页面选择器已改版，先用 snapshot 实时探测再操作，不要盲目重试。'
+run 'zhihu' '知乎' '把「测试文章」同步到知乎（账号：JavaEdge聊AI）。 文章文件：/tmp/测试文章.md。打开 https://zhuanlan.zhihu.com/write，复用我 Chrome 里已登录的会话（用 ego-browser 或 bb-browser），新建文章并填入标题、Markdown 正文，只保存到草稿箱并完成填写校验，绝对不要点最终「发布/提交」按钮。完成后用一行汇报：平台、结果、文章链接或草稿位置。若该页面选择器已改版，先用 snapshot 实时探测再操作，不要盲目重试。'
+
+echo ""
+echo "===== 汇总 ====="
+echo "结果:$RESULTS"
+if [ -n "$FAILED" ]; then echo "需重跑:$FAILED"; echo "补发单个平台: ONLY=平台id bash $0"; else echo "全部平台执行完毕"; fi
+echo "日志目录: $LOGDIR"

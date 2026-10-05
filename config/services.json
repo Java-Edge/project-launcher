@@ -162,6 +162,30 @@
       "stop": {"mode": "pattern", "value": "dsh web"}
     },
     {
+      "id": "md-publish",
+      "name": "📝 MD 多平台同步台",
+      "type": "frontend",
+      "group": "tools",
+      "port": 8095,
+      "url": "http://127.0.0.1:8095",
+      "log_file": "md-publish.log",
+      "status_cmd": "lsof -i :8095 -sTCP:LISTEN",
+      "start": {"dir": "{project_root}/projects/md-publish", "cmd": "bash start.sh"},
+      "stop": {"mode": "pattern", "value": "http.server 8095"}
+    },
+    {
+      "id": "md-publish-bridge",
+      "name": "🔌 MD 同步台执行桥",
+      "type": "backend",
+      "group": "tools",
+      "port": 8096,
+      "url": "http://127.0.0.1:8096/api/status",
+      "log_file": "md-publish-bridge.log",
+      "status_cmd": "lsof -i :8096 -sTCP:LISTEN",
+      "start": {"dir": "{project_root}/projects/md-publish", "cmd": "node bridge.mjs"},
+      "stop": {"mode": "pattern", "value": "node bridge.mjs"}
+    },
+    {
       "id": "openclaw",
       "name": "🌐 OpenClaw WebUI",
       "type": "tool",
