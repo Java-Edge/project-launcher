@@ -250,9 +250,9 @@
       "port": 8082,
       "url": "http://javaedge.cn:3000/#/index",
       "log_file": "code-select.log",
-      "status_cmd": "ps aux | grep code-select-front.*npm | grep -v grep",
+      "status_cmd": "lsof -i :8082 -sTCP:LISTEN",
       "start": {"dir": "/Users/javaedge/soft/VSProjects/code-select-front", "cmd": "npm run serve -- --port 8082"},
-      "stop": {"mode": "pattern", "value": "code-select-front.*npm"}
+      "stop": {"mode": "pattern", "value": "VSProjects/code-select-front"}
     },
     {
       "id": "fund-backend",
@@ -274,9 +274,9 @@
       "port": 3000,
       "url": "http://localhost:3000",
       "log_file": "fund-frontend.log",
-      "status_cmd": "ps aux | grep jijin.*npm | grep -v grep",
-      "start": {"dir": "/Users/javaedge/soft/VSProjects/jijin", "cmd": "npm run dev"},
-      "stop": {"mode": "pattern", "value": "jijin.*npm"}
+      "status_cmd": "lsof -i :3000 -sTCP:LISTEN",
+      "start": {"dir": "/Users/javaedge/soft/VSProjects/jijin", "cmd": "npm run dev -- --host 127.0.0.1"},
+      "stop": {"mode": "pattern", "value": "VSProjects/jijin"}
     },
     {
       "id": "invest-decision-frontend",
@@ -321,9 +321,9 @@
       "port": 8081,
       "url": "http://localhost:8081",
       "log_file": "java-interview.log",
-      "status_cmd": "ps aux | grep Java-Interview-Tutorial.*npm | grep -v grep",
+      "status_cmd": "lsof -i :8081 -sTCP:LISTEN",
       "start": {"dir": "/Users/javaedge/soft/VSProjects/Java-Interview-Tutorial", "cmd": "npm run dev -- --port 8081"},
-      "stop": {"mode": "pattern", "value": "Java-Interview-Tutorial.*npm"}
+      "stop": {"mode": "pattern", "value": "VSProjects/Java-Interview-Tutorial"}
     }
   ]
 }

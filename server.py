@@ -70,6 +70,26 @@ def substitute_placeholders(text, service):
             .replace("{log_file}", str(LOGS_DIR / service.get("log_file", "service.log"))))
 
 
+# 毒化变量：面板往往从带临时代理 / WorkBuddy shim 的终端启动，
+# 直接继承会让 frpc 走死代理导致隧道全断，node dev server 被 broker shim 崩掉
+POISON_ENV_KEYS = (
+    "http_proxy", "https_proxy", "all_proxy",
+    "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY",
+)
+POISON_NODE_OPTIONS_MARKERS = ("WorkBuddy", "brokered", "shim")
+
+
+def child_env():
+    """给子进程用的净化环境：剔除临时代理与 WorkBuddy NODE_OPTIONS 注入"""
+    env = os.environ.copy()
+    for key in POISON_ENV_KEYS:
+        env.pop(key, None)
+    node_options = env.get("NODE_OPTIONS", "")
+    if any(marker in node_options for marker in POISON_NODE_OPTIONS_MARKERS):
+        env.pop("NODE_OPTIONS", None)
+    return env
+
+
 def port_listening(port):
     if not port:
         return False
@@ -169,6 +189,7 @@ class ServiceManager:
                 process = subprocess.Popen(
                     ["bash", "-c", cmd],
                     cwd=work_dir,
+                    env=child_env(),
                     stdout=out,
                     stderr=subprocess.STDOUT,
                     start_new_session=True,
@@ -191,6 +212,7 @@ class ServiceManager:
             if stop["mode"] == "cmd":
                 result = subprocess.run(
                     ["bash", "-c", substitute_placeholders(stop["value"], service)],
+                    env=child_env(),
                     capture_output=True, text=True,
                 )
                 return result.returncode == 0, f"{name} 停止命令已执行" + ("" if result.returncode == 0 else f": {result.stderr.strip()}")
@@ -241,6 +263,7 @@ class ServiceManager:
             result = subprocess.run(
                 ["bash", str(script_path)],
                 cwd=PROJECT_ROOT,
+                env=child_env(),
                 capture_output=True,
                 text=True,
             )

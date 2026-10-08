@@ -10,6 +10,17 @@ CONFIG_FILE="${PROJECT_LAUNCHER_CONFIG:-$PROJECT_ROOT/config/services.json}"
 # 面板 /execute 调起时继承的 PATH 可能缺少用户级安装目录（hermes、npm、brew 等）
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
+# 毒化变量净化：start-all 常从带临时代理 / WorkBuddy shim 的终端执行，
+# 直接继承会让 frpc 走死代理导致隧道全断，node dev server 被 broker shim 崩掉
+sanitize_env() {
+    unset http_proxy https_proxy all_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY
+    if [ -n "${NODE_OPTIONS:-}" ] \
+        && { case "$NODE_OPTIONS" in *WorkBuddy*|*brokered*|*shim*) true ;; *) false ;; esac; }; then
+        unset NODE_OPTIONS
+    fi
+}
+sanitize_env
+
 # 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
