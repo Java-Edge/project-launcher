@@ -1,0 +1,4 @@
+interface:
+  display_name: "Work Report PPT"
+  short_description: "Generate concise leadership update decks from evidence"
+  default_prompt: "Use $work-report-ppt to turn my KPI, notes, reports, and project evidence into a concise leadership update PPT."

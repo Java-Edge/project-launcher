@@ -1,0 +1,4 @@
+interface:
+  display_name: "Office to Markdown"
+  short_description: "Convert Office files to Markdown with assets"
+  default_prompt: "Use $office-to-markdown to convert this DOCX/PPTX/XLSX file into Markdown with extracted image assets."
