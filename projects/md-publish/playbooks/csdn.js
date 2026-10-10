@@ -1,4 +1,5 @@
 /* CSDN 发文 playbook —— 由 csdn-publish skill 的实测选择器逐条移植（skill 原文是 bb-browser 写法，
+   SKILL.md 路径：skills/csdn-publish/SKILL.md（项目内，2026-10 从 ~/.agents/skills 迁入）；
    这里全部翻译成 ego-browser API：open→openOrReuseTab、eval→js(String.raw`...`)、snapshot -i→js DOM 探测、
    fill/press→js native setter；bb-browser 的 wait 单位是毫秒，本文件 wait()/timeout 一律用「秒」）。
    纯确定性执行，无 LLM 参与。skill 没写明的选择器一律不编造：确需泛化探测处标 TODO 待实测，

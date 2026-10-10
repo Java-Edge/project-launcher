@@ -1,5 +1,5 @@
 /* 博客园发文 playbook —— 由 cnblogs-publish skill 的实测选择器逐条移植（SKILL.md 选择器实测于 2026-09），
-   纯确定性执行，运行期零 LLM。选择器全部出自 SKILL.md 的「⚠️ 实测关键发现」（19-29 行）+「页面元素速查」（227-242 行）；
+   纯确定性执行，运行期零 LLM。SKILL.md 路径：skills/cnblogs-publish/SKILL.md（项目内，2026-10 从 ~/.agents/skills 迁入）；选择器全部出自 SKILL.md 的「⚠️ 实测关键发现」（19-29 行）+「页面元素速查」（227-242 行）；
    skill 没写明的地方一律不猜：标 `// TODO 待实测：` 并把该步骤降级为「探测不到就 step('warn') 跳过」。
    博客园专有差异（掘金的 8 分类关键词表在此不适用，别照抄）：
      - 正文是原生 textarea #md-editor（不是 CodeMirror），native setter + input 事件（SKILL.md:21/232）
@@ -106,7 +106,7 @@ await wait(3);
 const info = await pageInfo();
 if (/account\.cnblogs\.com\/signin|\/signin|\/login/i.test(info.url)) fail('未登录或改版：编辑页跳到了登录页 ' + info.url);   // SKILL.md:92（不调 handOff，桥任务没有人在循环里）
 if (!/cnblogs\.com/i.test(info.url)) fail('未停在博客园编辑页: ' + info.url);
-// openOrReuseTab 可能复用到「编辑已有文章」的标签页：?postId= 页填下去会覆盖旧文章（SKILL.md:257 明确警告）
+// openOrReuseTab 可能复用到「编辑已有文章」的标签页：?postId= 页填下去会覆盖旧文章（SKILL.md:271 明确警告）
 if (/[?&]postId=/i.test(info.url)) fail('复用到了已有文章的编辑页（URL 带 postId），为避免覆盖旧文章已中止，请关掉那个标签页再试');
 const has = await js(String.raw`(() => ({
   title: !!document.querySelector('input#post-title'),

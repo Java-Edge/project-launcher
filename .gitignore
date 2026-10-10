@@ -81,8 +81,27 @@ npm-debug.log
 *.exe
 *.out
 *.app
-.workbuddy/memory/2026-09-01.md
-.workbuddy/memory/2026-09-03.md
 
-# WorkBuddy local agent state
+# ---------------------------------------------------------------- 本机运行态，一律不入库
+# 管控台/脚本产生的备份与临时产物（logs/ 已在上面忽略，这里兜住散落在别处的备份；
+# *.tmp 与 logs/ 是既有规则，add_service.py 的 config/services.json.tmp、
+# logs/services.json.bak.<时间戳> 都能被兜住）
+*.bak
+*.bak.[0-9]*
+
+# AI 积分看板的采集数据：data/ 全是本机跑出来的快照与页面转储。
+# ⚠️ 本仓库在 GitHub 上是 PUBLIC，data/credits.json 含账号邮箱、data/raw/ 含账单页正文，
+#    一律不提交（要留样本请脱敏后单独放 examples/）。
+projects/ai-credits-audit/data/
+
+# md-publish 的运行产物不用新规则：任务日志落在 projects/md-publish/logs/（被 logs/ 覆盖），
+# start.sh 的 logs-bridge.out / logs-start.out 被上面的 *.out 覆盖。
+
+# 各类 agent / IDE 落在工作区的用户态目录
+.workbuddy/
 .workbuddy-ai/
+.uploads/
+.qodo/
+.meituan-catpaw/
+.output/
+.qoder/

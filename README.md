@@ -416,6 +416,22 @@ tail -f logs/*.log
 
 ✅ **健康检查**：检查服务是否真正可用
 
+### 增删一个服务
+
+只改 `config/services.json` 一处，用随仓库自带的 skill 脚本做校验与文本级插入（保住手工排版），面板按 mtime 热加载，**不用重启、不用改 shell 脚本**：
+
+```bash
+S=skills/add-service/scripts/add_service.py
+python3 $S --list                                  # 看现有分组/类型/服务，避开 id、端口撞车
+python3 $S --template > /tmp/svc.json              # 拿模板填
+python3 $S --config /tmp/svc.json --dry-run        # 先干跑，校验不过在这一步就报错
+python3 $S --config /tmp/svc.json                  # 落盘（一键启动要带上它再加 --autostart）
+python3 $S --check <id>                            # shell 侧 svc_query + 面板 /status 双向确认
+python3 $S --remove <id> --yes                     # 回滚（同时从 autostart_order 摘掉）
+```
+
+字段含义、坑与实测记录见 `skills/add-service/SKILL.md`。
+
 ## 📊 项目统计
 
 📦 **总计 14 个项目**
@@ -552,8 +568,10 @@ project-launcher/
 │   └── utils/
 │       └── service-control.sh   # 共享函数库（读取 services.json）
 ├── logs/                        # 服务日志目录
+├── skills/
+│   └── add-service/             # 增删管控台服务的 skill（脚本 + 字段说明）
 ├── archive/                     # 历史文档与一次性报告
-└── projects/                    # 项目详情（未来扩展）
+└── projects/                    # 各项目详情（md-publish 等，含自带 skills/）
 ```
 
 ## 🎯 快速入门指南

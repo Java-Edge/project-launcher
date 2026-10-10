@@ -1,6 +1,8 @@
 /* 头条号发文 playbook —— 由 toutiao-publish SKILL.md（实测 2026-07）的选择器逐条移植为确定性代码，运行期无 LLM 参与。
    bridge 会注入 ARGS：{ file, mode:'draft'|'publish', title?, tags?:[], category?, summary?, cover? }
-   事实来源：/Users/javaedge/.agents/skills/toutiao-publish/SKILL.md（下文注释中的 L<行号> 均指该文件）
+   事实来源：/Users/javaedge/soft/VSProjects/project-launcher/projects/md-publish/skills/toutiao-publish/SKILL.md
+   （2026-10 从 ~/.agents/skills/toutiao-publish 迁入，原目录已删；下文注释中的 L<行号> 均指该文件，
+    该文件只在末尾追加过订正、行号未变动）
    已知差异：skill 里的 tags/category/summary 在头条发布页没有实测过的填法 → 一律跳过并 note，不硬填。
    平台口径（2026-10-06 定）：头条只到草稿箱，最终提交人工点 —— 封面必填而「无封面」选项在本版 UI 切不动，
    且封面上传入口在 DOM 里找不到 input[type=file]（详见第 7 节的四条实测）。mode=publish 也只做到落盘核验，不点提交。 */

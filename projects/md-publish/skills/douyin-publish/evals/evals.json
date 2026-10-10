@@ -1,0 +1,27 @@
+{
+  "skill_name": "douyin-publish",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "请用 douyin-publish 技能把本地图片作品 my-art.png 和文案 '我的最新插画发布啦，欢迎点赞关注！' 发布到我的个人抖音账号，并在发布前给我预览。",
+      "expected_output": "说明已识别本地图片和文案，使用 bb-browser 打开抖音发布页面，并给出发布前预览和最终结果。",
+      "files": [],
+      "expectations": [
+        "输出中包含本地文件名 my-art.png。",
+        "输出中包含发布文案和预览提示。",
+        "输出中说明使用 bb-browser 进入抖音发布页面。"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "帮我把这篇本地 Markdown 文章转换成抖音图文发布内容，自动提取标题和简介，生成标签，然后用 douyin-publish 技能发布到我的个人抖音账号。",
+      "expected_output": "提取 Markdown 内容作为发布文案，生成标签并说明发布到抖音的自动化流程。",
+      "files": [],
+      "expectations": [
+        "输出中提到从 Markdown 提取标题和正文。",
+        "输出中提到自动生成标签并要求发布前确认。",
+        "输出中包含发布最终结果或失败原因说明。"
+      ]
+    }
+  ]
+}

@@ -1,5 +1,7 @@
 /* 51CTO 发文 playbook —— 由 51cto-publish skill 的实测结论逐条移植，纯确定性执行，运行期零 LLM。
-   事实来源：~/.agents/skills/51cto-publish/SKILL.md（2026-09 实测，含一次真实发布 + 删除回退）
+   事实来源：skills/51cto-publish/SKILL.md（项目内绝对路径
+             /Users/javaedge/soft/VSProjects/project-launcher/projects/md-publish/skills/51cto-publish/SKILL.md，
+             2026-10 从 ~/.agents/skills/51cto-publish 迁入，原目录已删）
              references/categories.json（31 个一级分类 ID 快照，本文件内嵌）
              references/troubleshooting.md（空文 / 旧标题 / 合成点击无效等坑）
    四条实测命门（决定成败，代码按此顺序落）：

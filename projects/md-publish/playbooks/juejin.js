@@ -1,4 +1,4 @@
-/* 掘金发文 playbook —— 由 juejin-publish skill 的实测选择器逐条移植，纯确定性执行，无 LLM 参与。
+/* 掘金发文 playbook —— 由 juejin-publish skill 的实测选择器逐条移植（SKILL.md 路径：skills/juejin-publish/SKILL.md，项目内，2026-10 从 ~/.agents/skills 迁入），纯确定性执行，无 LLM 参与。
    bridge 会注入 ARGS：{ file, mode:'draft'|'publish', title?, tags?:[], category?, summary?, cover? } */
 /*ARGS_TOKEN__*/
 const { readFileSync, existsSync } = await import('node:fs');

@@ -321,10 +321,11 @@
       <li>第 ① 步填文章的<b>绝对路径</b>（Finder 里选中文件 → 右键按住 option → 拷贝为路径名称）。只粘贴正文不填路径也行，但 playbook 需要落盘文件才能读原文。</li>
       <li>第 ② 步选发布方式。<b>第一次跑请选「存为草稿」</b>，到平台后台看一眼排版再决定直发。</li>
       <li>第 ③ 步点选平台。卡片上标 <b>本机脚本</b> 的已经接好（掘金 / CSDN / 博客园 / 51CTO / 头条号），标 <b>待接入</b> 的只能导出指令；想单跑一家就点卡片上的「只同步这家」。</li>
-      <li>点底部「存为草稿 / 直接发布」后，本机 <code class="i">bridge.mjs</code> 会把 <code class="i">playbooks/&lt;平台&gt;.js</code> 喂给 ego-browser 逐条执行——<b>全程没有大模型参与</b>，选择器都是 skill 里实测过的固定路径，所以不限次数、不消耗任何额度。</li>
+      <li>点底部「存为草稿 / 直接发布」后，本机 <code class="i">bridge.mjs</code> 会把 <code class="i">playbooks/&lt;平台&gt;.js</code> 喂给 ego-browser 逐条执行——<b>全程没有大模型参与</b>，选择器都是 <code class="i">skills/&lt;平台&gt;-publish/SKILL.md</code> 里实测过的固定路径，所以不限次数、不消耗任何额度。</li>
       <li>进度在第 ④ 步实时刷新；失败的任务会把页面提示原文写进日志（<code class="i">md-publish/logs/job-*.log</code>），照抄报错就能定位。</li>
       <li>平台报「未登录」时：在弹出的 Ego Lite 窗口里登录一次那个平台，再点一次按钮即可（登录态存在 Ego Lite，不影响你日常 Chrome）。</li>
       <li>只想补发其中几个平台：取消勾选别的平台再点按钮。</li>
+      <li>发文依据已全部收进 <code class="i">md-publish/skills/</code>（8 个目录：五家博客平台的 SKILL.md + 51CTO 的分类快照与预处理脚本 + 抖音图文 + 编程严选网 + 发文地址反查），仓库自带、不依赖 <code class="i">~/.agents/skills</code>；「复制指令」出来的文案直接指向这个目录里的文件，改选择器就改这里。</li>
     </ol>
     <p class="hint">前置条件：本机装有 <code class="i">ego-browser</code>（桥会在 /api/status 里报告能否找到它），并且页面与桥同源在本机打开。桥只监听 127.0.0.1:8096，不对外提供服务。</p>
   </div>
@@ -356,15 +357,17 @@
 <script>
 /* ============================ 数据 ============================ */
 const LS_KEY = 'mdps.v1';
+/* 项目根绝对路径：skill 文档已从 ~/.agents/skills 迁进本仓库 skills/，指令里给绝对路径，任何智能体都能直接读到 */
+const PB_ROOT = '/Users/javaedge/soft/VSProjects/project-launcher/projects/md-publish';
 
 const DEFAULTS = [
-  {id:'csdn',        name:'CSDN',            acc:'JavaEdge',        kind:'skill',  skill:'csdn-publish',  pb:true, editor:'https://editor.csdn.net/md/',                              color:'#fc5531', mark:'CSDN', on:true},
-  {id:'juejin',      name:'掘金',            acc:'JavaEdge在掘金',  kind:'skill',  skill:'juejin-publish',pb:true, editor:'https://juejin.cn/editor/drafts/new?v=2',                   color:'#1e80ff', mark:'掘金', on:true},
-  {id:'cnblogs',     name:'博客园',          acc:'公众号-JavaEdge', kind:'skill',  skill:'cnblogs-publish',pb:true,editor:'https://i.cnblogs.com/articles/edit',                       color:'#3b7fc4', mark:'园',   on:true},
-  {id:'51cto',       name:'51CTO',           acc:'JavaEdge',        kind:'skill',  skill:'51cto-publish', pb:true, editor:'https://blog.51cto.com/blogger/publish?old=1&newBloger=2',   color:'#d9302e', mark:'51CTO',on:true},
-  {id:'toutiao',     name:'头条号',          acc:'JavaEdge聊AI',    kind:'skill',  skill:'toutiao-publish',pb:true, manual:true, editor:'https://mp.toutiao.com/profile_v4/graphic/publish',          color:'#f04142', mark:'头条', on:true},
-  {id:'douyin',      name:'抖音图文',        acc:'JavaEdge',        kind:'skill',  skill:'douyin-publish', editor:'https://creator.douyin.com/',                               color:'#fe2c55', mark:'抖音', on:true, noDraft:true},
-  {id:'vuepress',    name:'编程严选网',      acc:'本地 VuePress',   kind:'skill',  skill:'vuepress-article-publisher', editor:'',                            color:'#42b983', mark:'严选', on:true, noDraft:true},
+  {id:'csdn',        name:'CSDN',            acc:'JavaEdge',        kind:'skill',  skill:'csdn-publish',  pb:true, skillFile:'skills/csdn-publish/SKILL.md',    editor:'https://editor.csdn.net/md/',                              color:'#fc5531', mark:'CSDN', on:true},
+  {id:'juejin',      name:'掘金',            acc:'JavaEdge在掘金',  kind:'skill',  skill:'juejin-publish',pb:true, skillFile:'skills/juejin-publish/SKILL.md',  editor:'https://juejin.cn/editor/drafts/new?v=2',                   color:'#1e80ff', mark:'掘金', on:true},
+  {id:'cnblogs',     name:'博客园',          acc:'公众号-JavaEdge', kind:'skill',  skill:'cnblogs-publish',pb:true,skillFile:'skills/cnblogs-publish/SKILL.md', editor:'https://i.cnblogs.com/articles/edit',                       color:'#3b7fc4', mark:'园',   on:true},
+  {id:'51cto',       name:'51CTO',           acc:'JavaEdge',        kind:'skill',  skill:'51cto-publish', pb:true, skillFile:'skills/51cto-publish/SKILL.md',   editor:'https://blog.51cto.com/blogger/publish?old=1&newBloger=2',   color:'#d9302e', mark:'51CTO',on:true},
+  {id:'toutiao',     name:'头条号',          acc:'JavaEdge聊AI',    kind:'skill',  skill:'toutiao-publish',pb:true, manual:true, skillFile:'skills/toutiao-publish/SKILL.md', editor:'https://mp.toutiao.com/profile_v4/graphic/publish',          color:'#f04142', mark:'头条', on:true},
+  {id:'douyin',      name:'抖音图文',        acc:'JavaEdge',        kind:'skill',  skill:'douyin-publish', skillFile:'skills/douyin-publish/SKILL.md', tool:'照文档里的 bb-browser 命令执行（属登录态例外，别换成 ego-browser）', editor:'https://creator.douyin.com/',                               color:'#fe2c55', mark:'抖音', on:true, noDraft:true},
+  {id:'vuepress',    name:'编程严选网',      acc:'本地 VuePress',   kind:'skill',  skill:'vuepress-article-publisher', skillFile:'skills/vuepress-article-publisher/SKILL.md', tool:'跑文档里的本地 python 脚本（不动浏览器）', editor:'',                            color:'#42b983', mark:'严选', on:true, noDraft:true},
   {id:'wechat',      name:'微信公众号',      acc:'JavaEdge',        kind:'browser',skill:'',                editor:'https://mp.weixin.qq.com/cgi-bin/appmsg?t=media/appmsg_edit', color:'#07c160', mark:'公众', on:true},
   {id:'zhihu',       name:'知乎',            acc:'JavaEdge聊AI',    kind:'browser',skill:'',                editor:'https://zhuanlan.zhihu.com/write',                         color:'#0084ff', mark:'知乎', on:true},
   {id:'cnblog_dev',  name:'腾讯云开发者社区', acc:'JavaEdge',        kind:'browser',skill:'',                editor:'https://cloud.tencent.com/developer/article/write',         color:'#00a6a6', mark:'腾讯云',on:false},
@@ -380,8 +383,8 @@ const DEFAULTS = [
 /* ============================ 状态 ============================ */
 const saved = load();
 const P = (saved.platforms && saved.platforms.length) ? saved.platforms : DEFAULTS.map(x => ({...x}));
-// 老存档没有 pb 字段（是否已接 playbook）：以代码里的 DEFAULTS 为准回填
-P.forEach(p => { const d = DEFAULTS.find(x => x.id === p.id); if (d) { if (p.pb === undefined) p.pb = d.pb; if (p.manual === undefined) p.manual = d.manual } });
+// 老存档没有 pb / manual / skillFile 字段（是否已接 playbook、只到草稿、项目内 skill 文档）：以代码里的 DEFAULTS 为准回填
+P.forEach(p => { const d = DEFAULTS.find(x => x.id === p.id); if (d) { if (p.pb === undefined) p.pb = d.pb; if (p.manual === undefined) p.manual = d.manual; if (p.skillFile === undefined) p.skillFile = d.skillFile; if (p.tool === undefined) p.tool = d.tool } });
 const S = Object.assign({
   path:'', body:'', title:'', tags:'', excerpt:'',
   mode:'draft', confirm:true, cover:'', bridge:'http://127.0.0.1:8096'
@@ -461,7 +464,11 @@ function buildPrompt(p){
   const src = articleSource();
   const head = '把「' + parseArticle().title + '」同步到' + p.name + '（账号：' + p.acc + '）。';
   if (p.kind === 'skill') {
-    return head + ' ' + src + '。用 ' + p.skill + ' 这个 skill 执行，' + modeText(p) + '。' + tail() + '。';
+    const how = p.skillFile
+      ? '按 ' + PB_ROOT + '/' + p.skillFile + ' 这份 skill 文档执行（原 ~/.agents/skills/' + p.skill + ' 已迁进本项目并删除，不再单独安装）' + (p.tool ? '；执行方式：' + p.tool : '')
+      : '用 ' + p.skill + ' 这个 skill 执行';
+    const pb = p.pb ? '；更省事的是直接点本页按钮跑 ' + PB_ROOT + '/playbooks/' + p.id + '.js，零大模型参与' : '';
+    return head + ' ' + src + '。' + how + pb + '，' + modeText(p) + '。' + tail() + '。';
   }
   if (p.kind === 'cli') {
     return head + ' ' + src + '。用 ' + p.skill + ' 等现成 CLI 能力完成' + p.name + '发文，' + modeText(p) + '。' + tail() + '。';

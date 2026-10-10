@@ -162,6 +162,18 @@
       "stop": {"mode": "pattern", "value": "dsh web"}
     },
     {
+      "id": "credits-dashboard",
+      "name": "💳 AI 积分看板",
+      "type": "tool",
+      "group": "tools",
+      "port": 8787,
+      "url": "http://127.0.0.1:8787/assets/dashboard.html",
+      "log_file": "credits-dashboard.log",
+      "status_cmd": "lsof -i :8787 -sTCP:LISTEN",
+      "start": {"dir": "{project_root}/projects/ai-credits-audit", "cmd": "python3 scripts/server.py 8787"},
+      "stop": {"mode": "port", "value": "8787"}
+    },
+    {
       "id": "md-publish",
       "name": "📝 MD 多平台同步台",
       "type": "frontend",

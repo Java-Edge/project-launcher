@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  每日积分采集 —— launchd 定时任务
+  安装：
+    cp /Users/javaedge/soft/VSProjects/project-launcher/projects/ai-credits-audit/scripts/com.ai-credits-audit.daily.plist ~/Library/LaunchAgents/
+    launchctl load  ~/Library/LaunchAgents/com.ai-credits-audit.daily.plist
+  卸载：
+    launchctl unload ~/Library/LaunchAgents/com.ai-credits-audit.daily.plist
+  看日志：
+    tail -f /Users/javaedge/soft/VSProjects/project-launcher/projects/ai-credits-audit/data/logs/refresh-$(date +%F).log
+
+  RunAtLoad=true 表示装上就立刻跑一次。
+  这个任务只做「采集 + 刷新数据层」，**不开看板服务**（服务由你手动或用
+  scripts/serve.sh 启动）—— 后台常驻一个浏览器自动化服务没意义，还占端口。
+  注意：launchd 后台会话没有图形登录上下文，ego-browser 可能起不来。
+  那时 refresh.sh 会写 NEEDS_AGENT 标记，由 agent 在前台会话补做。
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.ai-credits-audit.daily</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/javaedge/soft/VSProjects/project-launcher/projects/ai-credits-audit/scripts/refresh.sh</string>
+  </array>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>SKILL</key>
+    <string>/Users/javaedge/soft/VSProjects/project-launcher/projects/ai-credits-audit</string>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/Users/javaedge/.local/bin</string>
+  </dict>
+
+  <key>StartCalendarInterval</key>
+  <dict>
+    <!-- 每天 09:07 跑。避开整点，减少和别的定时任务撞车 -->
+    <key>Hour</key><integer>9</integer>
+    <key>Minute</key><integer>7</integer>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/javaedge/soft/VSProjects/project-launcher/projects/ai-credits-audit/data/logs/launchd.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/javaedge/soft/VSProjects/project-launcher/projects/ai-credits-audit/data/logs/launchd.err.log</string>
+</dict>
+</plist>
