@@ -1,0 +1,1 @@
+Command '['claude', '--print', '请用 us-value-investing 技能评估苹果公司 AAPL 的价值投资适应性，按 ROE 可持续性、负债安全、自由现金流质量、经济护城河四个维度分别打分，并给出总分、评级和投资建议。', '--output-format', 'text', '--verbose', '--setting-sources', 'user']' timed out after 300 seconds
