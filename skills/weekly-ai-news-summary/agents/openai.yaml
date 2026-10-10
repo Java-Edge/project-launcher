@@ -1,0 +1,5 @@
+display_name: AI 周报
+short_description: 每周全球 AI 资讯摘要
+default_prompt: 总结最近一周全球 AI 新闻
+policy:
+  allow_implicit_invocation: true
